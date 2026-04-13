@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -55,7 +55,6 @@ const COLORS = {
   softBlue: "#EEF3FB",
   border: "#D9E1F0",
   textSoft: "#6B7280",
-  warm: "#FFF4EC",
 };
 
 function round2(n) {
@@ -165,11 +164,11 @@ async function ensureAnonAuth() {
   return auth.currentUser;
 }
 
-function CardBox({ children, className = "" }) {
+function CardBox({ children, className = "", style = {} }) {
   return (
     <div
       className={`rounded-[28px] bg-white shadow-sm border ${className}`}
-      style={{ borderColor: COLORS.border }}
+      style={{ borderColor: COLORS.border, ...style }}
     >
       {children}
     </div>
@@ -610,12 +609,23 @@ function WaitingPage({ player }) {
 function AssignedClientPanel({ assignedClient, session }) {
   const currentClient = session?.currentClient || null;
   const isCurrent = currentClient?.id === assignedClient?.id;
-  const status = isCurrent ? currentClient.status : "pendiente";
+  const status = isCurrent ? currentClient?.status || "activo" : "pendiente";
 
   if (!assignedClient) {
     return (
-      <CardBox className="p-8 text-center text-sm" style={{ color: COLORS.textSoft }}>
-        El host aún no te asigna un cliente específico.
+      <CardBox className="p-8 text-center">
+        <div
+          className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-white"
+          style={{ backgroundColor: COLORS.orange }}
+        >
+          <Briefcase className="h-6 w-6" />
+        </div>
+        <h3 className="mt-4 text-2xl font-semibold" style={{ color: COLORS.blue }}>
+          Esperando cliente asignado
+        </h3>
+        <p className="mt-2" style={{ color: COLORS.textSoft }}>
+          El host ya te asignó el rol de cliente, pero todavía no ha seleccionado cuál cliente representas.
+        </p>
       </CardBox>
     );
   }
@@ -666,7 +676,7 @@ function AssignedClientPanel({ assignedClient, session }) {
             Necesidad
           </div>
           <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
-            {assignedClient.need}
+            {assignedClient.need || "Sin necesidad registrada"}
           </p>
         </div>
 
@@ -675,7 +685,7 @@ function AssignedClientPanel({ assignedClient, session }) {
             Contexto del caso
           </div>
           <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
-            {assignedClient.context}
+            {assignedClient.context || "Sin contexto registrado"}
           </p>
         </div>
       </div>
@@ -805,6 +815,7 @@ function GameSetupPage({
   players,
   onAssignRole,
   onCloseSession,
+  onGoFacilitator,
 }) {
   return (
     <div className="space-y-6">
@@ -833,7 +844,10 @@ function GameSetupPage({
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
+            <ActionButton onClick={onGoFacilitator} variant="orange">
+              Ir a facilitador
+            </ActionButton>
             <ActionButton onClick={onCloseSession} variant="secondary">
               Cerrar sesión local
             </ActionButton>
@@ -871,7 +885,12 @@ function GameSetupPage({
                     value={roleOptionValue(player.role || "unassigned", player.branchId || "")}
                     onChange={(e) => {
                       const [role, branchId] = e.target.value.split("|");
-                      onAssignRole(player.id, role, branchId || "", player.assignedClientId || "");
+                      onAssignRole(
+                        player.id,
+                        role,
+                        branchId || "",
+                        role === "cliente" ? player.assignedClientId || "" : ""
+                      );
                     }}
                   >
                     <option value="unassigned|">Sin asignar</option>
@@ -1134,15 +1153,16 @@ function IntermediaryPage({ player, session, onSelectClient }) {
 }
 
 function ClientePage({ player, session }) {
-  const assignedClient = seedClients.find(
-    (c) => String(c.id) === String(player.assignedClientId || "")
-  );
+  const assignedClientId = player?.assignedClientId ? String(player.assignedClientId) : "";
+  const assignedClient = assignedClientId
+    ? seedClients.find((c) => String(c.id) === assignedClientId)
+    : null;
 
   return (
     <div className="space-y-6">
       <SectionHeader
         title="Panel de cliente"
-        subtitle={`${player.name} · Aquí interpretas el cliente asignado.`}
+        subtitle={`${player?.name || "Jugador"} · Aquí interpretas el cliente asignado.`}
         icon={Briefcase}
       />
       <AssignedClientPanel assignedClient={assignedClient} session={session} />
@@ -1528,6 +1548,7 @@ export default function App() {
   };
 
   const goFinal = () => setScreen("final");
+  const goFacilitator = () => setScreen("facilitador");
 
   if (!authReady) {
     return (
@@ -1847,6 +1868,7 @@ export default function App() {
                     players={players}
                     onAssignRole={assignRole}
                     onCloseSession={closeLocalSession}
+                    onGoFacilitator={goFacilitator}
                   />
                 ) : !playerDoc ? (
                   <CardBox className="p-8 text-sm" style={{ color: COLORS.textSoft }}>
