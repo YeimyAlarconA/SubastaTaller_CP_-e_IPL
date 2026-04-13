@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -20,10 +20,8 @@ import {
   TrendingDown,
   CircleDollarSign,
   ChevronRight,
-  RotateCcw,
   Eye,
   EyeOff,
-  User,
   Copy,
   LogOut,
 } from "lucide-react";
@@ -45,6 +43,17 @@ import { seedClients } from "./seedClients";
 
 const GASTO_META = 500;
 const STORAGE_KEY = "subasta_mvp_session";
+
+const COLORS = {
+  orange: "#EE7623",
+  blue: "#1E3663",
+  blueDark: "#002977",
+  white: "#FFFFFF",
+  bg: "#F5F7FB",
+  softBlue: "#EEF3FB",
+  border: "#D9E1F0",
+  textSoft: "#6B7280",
+};
 
 function round2(n) {
   return Math.round(n * 100) / 100;
@@ -104,24 +113,6 @@ function riskClasses(risk) {
   return "bg-rose-100 text-rose-700 border-rose-200";
 }
 
-function fitScore(client, intermediary) {
-  const lineMatch = intermediary.lineas?.includes(client.line) ? 18 : 0;
-  const riskPenalty = client.risk === "Alto" ? 14 : client.risk === "Medio" ? 7 : 0;
-  const retentionValue = 100 - Math.min(95, client.claims * 0.9);
-
-  return Math.max(
-    1,
-    Math.round(
-      intermediary.relacion * 0.3 +
-        intermediary.cierre * 0.3 +
-        intermediary.tecnica * 0.2 +
-        retentionValue * 0.2 +
-        lineMatch -
-        riskPenalty
-    )
-  );
-}
-
 function generateCode() {
   return Math.random().toString(36).slice(2, 7).toUpperCase();
 }
@@ -173,15 +164,21 @@ async function ensureAnonAuth() {
 
 function CardBox({ children, className = "" }) {
   return (
-    <div className={`rounded-[28px] border border-slate-200 bg-white shadow-sm ${className}`}>
+    <div
+      className={`rounded-[28px] bg-white shadow-sm border ${className}`}
+      style={{ borderColor: COLORS.border }}
+    >
       {children}
     </div>
   );
 }
 
-function BadgePill({ children, className = "" }) {
+function BadgePill({ children, className = "", style = {} }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${className}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${className}`}
+      style={style}
+    >
       {children}
     </span>
   );
@@ -191,11 +188,13 @@ function PanelButton({ active, icon: Icon, children, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`rounded-2xl px-4 py-2.5 text-sm font-medium transition ${
-        active
-          ? "bg-slate-900 text-white shadow-sm"
-          : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-      }`}
+      className="rounded-2xl px-4 py-2.5 text-sm font-medium transition border"
+      style={{
+        backgroundColor: active ? COLORS.blueDark : COLORS.white,
+        color: active ? COLORS.white : COLORS.blue,
+        borderColor: active ? COLORS.blueDark : COLORS.border,
+        boxShadow: active ? "0 8px 20px rgba(0,41,119,0.18)" : "none",
+      }}
     >
       <span className="inline-flex items-center gap-2">
         <Icon className="h-4 w-4" />
@@ -205,11 +204,53 @@ function PanelButton({ active, icon: Icon, children, onClick }) {
   );
 }
 
-function StatCard({ label, value, accent = "text-slate-900" }) {
+function ActionButton({ children, onClick, disabled = false, variant = "primary", className = "" }) {
+  const styles =
+    variant === "orange"
+      ? {
+          backgroundColor: disabled ? "#f1b082" : COLORS.orange,
+          color: COLORS.white,
+          borderColor: disabled ? "#f1b082" : COLORS.orange,
+        }
+      : variant === "secondary"
+      ? {
+          backgroundColor: COLORS.white,
+          color: COLORS.blue,
+          borderColor: COLORS.border,
+        }
+      : {
+          backgroundColor: disabled ? "#8ba0c8" : COLORS.blue,
+          color: COLORS.white,
+          borderColor: disabled ? "#8ba0c8" : COLORS.blue,
+        };
+
   return (
-    <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
-      <div className="text-[11px] uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={`mt-1 text-2xl font-semibold ${accent}`}>{value}</div>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`rounded-2xl border px-4 py-2.5 text-sm font-medium transition ${className}`}
+      style={{
+        ...styles,
+        cursor: disabled ? "not-allowed" : "pointer",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function StatCard({ label, value, accent = COLORS.blue }) {
+  return (
+    <div
+      className="rounded-3xl p-4 border"
+      style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
+    >
+      <div className="text-[11px] uppercase tracking-wide" style={{ color: COLORS.textSoft }}>
+        {label}
+      </div>
+      <div className="mt-1 text-2xl font-semibold" style={{ color: accent }}>
+        {value}
+      </div>
     </div>
   );
 }
@@ -218,12 +259,17 @@ function SectionHeader({ title, subtitle, icon: Icon }) {
   return (
     <div className="mb-4">
       <div className="flex items-center gap-2">
-        <div className="rounded-2xl bg-slate-900 p-2 text-white">
+        <div
+          className="rounded-2xl p-2 text-white"
+          style={{ backgroundColor: COLORS.blue }}
+        >
           <Icon className="h-4 w-4" />
         </div>
-        <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+        <h2 className="text-xl font-semibold" style={{ color: COLORS.blue }}>
+          {title}
+        </h2>
       </div>
-      {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+      {subtitle && <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>{subtitle}</p>}
     </div>
   );
 }
@@ -231,12 +277,19 @@ function SectionHeader({ title, subtitle, icon: Icon }) {
 function LogoHeader() {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-sm">
+      <div
+        className="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-sm"
+        style={{ backgroundColor: COLORS.blueDark }}
+      >
         <Building2 className="h-5 w-5" />
       </div>
       <div>
-        <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Estado</div>
-        <div className="text-lg font-semibold text-slate-900">Subasta Interactiva</div>
+        <div className="text-xs uppercase tracking-[0.2em]" style={{ color: COLORS.textSoft }}>
+          Estado
+        </div>
+        <div className="text-2xl font-semibold" style={{ color: COLORS.blue }}>
+          Subasta Interactiva
+        </div>
       </div>
     </div>
   );
@@ -245,11 +298,17 @@ function LogoHeader() {
 function ClientVisual({ visual }) {
   if (visual === "empresa") {
     return (
-      <div className="flex h-44 items-center justify-center rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="relative flex h-28 w-28 items-end justify-center rounded-[28px] bg-slate-800 shadow-lg">
+      <div
+        className="flex h-44 items-center justify-center rounded-[28px] border"
+        style={{ borderColor: COLORS.border, background: "linear-gradient(135deg, #f7f9fc, #eaf0fb)" }}
+      >
+        <div
+          className="relative flex h-28 w-28 items-end justify-center rounded-[28px] shadow-lg"
+          style={{ backgroundColor: COLORS.blue }}
+        >
           <div className="mb-4 grid grid-cols-3 gap-1">
             {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="h-3 w-3 rounded-sm bg-white/85" />
+              <div key={i} className="h-3 w-3 rounded-sm bg-white/90" />
             ))}
           </div>
         </div>
@@ -259,7 +318,10 @@ function ClientVisual({ visual }) {
 
   if (visual === "mujer") {
     return (
-      <div className="flex h-44 items-end justify-center rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+      <div
+        className="flex h-44 items-end justify-center rounded-[28px] border p-4"
+        style={{ borderColor: COLORS.border, background: "linear-gradient(135deg, #f7f9fc, #eaf0fb)" }}
+      >
         <div className="relative h-36 w-28">
           <div className="absolute left-1/2 top-3 h-20 w-20 -translate-x-1/2 rounded-full bg-[#5b3b35]" />
           <div className="absolute left-1/2 top-8 h-20 w-16 -translate-x-1/2 rounded-[40px] bg-[#f2c7a7]" />
@@ -273,7 +335,10 @@ function ClientVisual({ visual }) {
   }
 
   return (
-    <div className="flex h-44 items-end justify-center rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+    <div
+      className="flex h-44 items-end justify-center rounded-[28px] border p-4"
+      style={{ borderColor: COLORS.border, background: "linear-gradient(135deg, #f7f9fc, #eaf0fb)" }}
+    >
       <div className="relative h-36 w-28">
         <div className="absolute left-1/2 top-3 h-20 w-20 -translate-x-1/2 rounded-full bg-[#3c2f2f]" />
         <div className="absolute left-1/2 top-8 h-20 w-16 -translate-x-1/2 rounded-[40px] bg-[#f2c7a7]" />
@@ -296,13 +361,13 @@ function BranchBoard({ branch, movements }) {
   const semaforo = getSemaforo(cobertura);
 
   const metrics = [
-    { label: "Primas", value: branch.primas, color: "bg-sky-500", icon: TrendingUp },
-    { label: "Siniestros", value: branch.siniestros, color: "bg-amber-400", icon: TrendingDown },
-    { label: "Comisiones", value: branch.comisiones, color: "bg-slate-500", icon: Coins },
+    { label: "Primas", value: branch.primas, color: COLORS.blue, icon: TrendingUp },
+    { label: "Siniestros", value: branch.siniestros, color: "#D97706", icon: TrendingDown },
+    { label: "Comisiones", value: branch.comisiones, color: COLORS.orange, icon: Coins },
     {
       label: "Resultado",
       value: resultado,
-      color: resultado >= 0 ? "bg-emerald-500" : "bg-rose-500",
+      color: resultado >= 0 ? "#059669" : "#DC2626",
       icon: CircleDollarSign,
     },
   ];
@@ -311,10 +376,13 @@ function BranchBoard({ branch, movements }) {
 
   return (
     <CardBox className="p-6">
-      <div className="rounded-[28px] bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-5 text-white">
+      <div
+        className="rounded-[28px] p-5 text-white"
+        style={{ background: `linear-gradient(135deg, ${COLORS.blueDark}, ${COLORS.blue})` }}
+      >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="text-sm text-white/70">Panel de sucursal</div>
+            <div className="text-sm text-white/75">Panel de sucursal</div>
             <div className="mt-1 text-2xl font-semibold">{branch.name}</div>
           </div>
           <div className="rounded-2xl bg-white/10 px-4 py-3">
@@ -329,18 +397,18 @@ function BranchBoard({ branch, movements }) {
       </div>
 
       <div className="mt-5 grid gap-4 md:grid-cols-6">
-        <StatCard label="Primas" value={formatMoney(branch.primas)} accent="text-sky-700" />
-        <StatCard label="Siniestros" value={formatMoney(branch.siniestros)} accent="text-amber-700" />
-        <StatCard label="Comisiones" value={formatMoney(branch.comisiones)} accent="text-slate-700" />
-        <StatCard label="Gasto meta" value={formatMoney(branch.gastoMeta)} accent="text-slate-700" />
-        <StatCard label="Gasto pendiente" value={formatMoney(gastoPendiente)} accent={gastoPendiente > 0 ? "text-slate-700" : "text-emerald-700"} />
-        <StatCard label="Utilidad" value={formatMoney(utilidad)} accent={utilidad >= 0 ? "text-emerald-700" : "text-rose-700"} />
+        <StatCard label="Primas" value={formatMoney(branch.primas)} accent={COLORS.blue} />
+        <StatCard label="Siniestros" value={formatMoney(branch.siniestros)} accent="#B45309" />
+        <StatCard label="Comisiones" value={formatMoney(branch.comisiones)} accent={COLORS.orange} />
+        <StatCard label="Gasto meta" value={formatMoney(branch.gastoMeta)} accent={COLORS.blueDark} />
+        <StatCard label="Gasto pendiente" value={formatMoney(gastoPendiente)} accent={gastoPendiente > 0 ? COLORS.blueDark : "#059669"} />
+        <StatCard label="Utilidad" value={formatMoney(utilidad)} accent={utilidad >= 0 ? "#059669" : "#DC2626"} />
       </div>
 
-      <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
-        <div className="mb-2 flex items-center justify-between text-sm text-slate-600">
+      <div className="mt-4 rounded-3xl border p-4" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+        <div className="mb-2 flex items-center justify-between text-sm" style={{ color: COLORS.textSoft }}>
           <span>Avance para cubrir el gasto meta</span>
-          <span className="font-semibold text-slate-900">{cobertura}%</span>
+          <span className="font-semibold" style={{ color: COLORS.blueDark }}>{cobertura}%</span>
         </div>
         <div className="h-4 overflow-hidden rounded-full bg-white">
           <motion.div
@@ -353,8 +421,8 @@ function BranchBoard({ branch, movements }) {
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.8fr]">
-        <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <div className="rounded-3xl border p-4" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+          <div className="mb-4 flex items-center gap-2 text-sm font-semibold" style={{ color: COLORS.blue }}>
             <BarChart3 className="h-4 w-4" />
             Comportamiento del tablero
           </div>
@@ -367,18 +435,21 @@ function BranchBoard({ branch, movements }) {
               return (
                 <div key={metric.label}>
                   <div className="mb-1 flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-slate-700">
+                    <div className="flex items-center gap-2" style={{ color: COLORS.blue }}>
                       <Icon className="h-4 w-4" />
                       {metric.label}
                     </div>
-                    <div className="font-semibold text-slate-900">{formatMoney(metric.value)}</div>
+                    <div className="font-semibold" style={{ color: COLORS.blueDark }}>
+                      {formatMoney(metric.value)}
+                    </div>
                   </div>
                   <div className="h-4 overflow-hidden rounded-full bg-white">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${percentage}%` }}
                       transition={{ duration: 0.4 }}
-                      className={`h-full rounded-full ${metric.color}`}
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: metric.color }}
                     />
                   </div>
                 </div>
@@ -387,8 +458,8 @@ function BranchBoard({ branch, movements }) {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <div className="rounded-3xl border p-4" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+          <div className="mb-4 flex items-center gap-2 text-sm font-semibold" style={{ color: COLORS.blue }}>
             <Bell className="h-4 w-4" />
             Movimientos recientes
           </div>
@@ -396,18 +467,18 @@ function BranchBoard({ branch, movements }) {
           <div className="space-y-3">
             {movements.length ? (
               movements.slice(0, 5).map((m) => (
-                <div key={m.id} className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="text-sm font-semibold text-slate-900">{m.clientName}</div>
-                  <div className="mt-1 text-xs text-slate-500">Entró por {m.playerName}</div>
+                <div key={m.id} className="rounded-2xl border bg-white p-3" style={{ borderColor: COLORS.border }}>
+                  <div className="text-sm font-semibold" style={{ color: COLORS.blueDark }}>{m.clientName}</div>
+                  <div className="mt-1 text-xs" style={{ color: COLORS.textSoft }}>Entró por {m.playerName}</div>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                    <BadgePill className="bg-sky-100 text-sky-700">+{formatMoney(m.premium)}</BadgePill>
-                    <BadgePill className="bg-amber-100 text-amber-700">+{formatMoney(m.claims)}</BadgePill>
-                    <BadgePill className="bg-slate-200 text-slate-700">+{formatMoney(m.commission)}</BadgePill>
+                    <BadgePill style={{ backgroundColor: "#E7F0FF", color: COLORS.blue }}>+{formatMoney(m.premium)}</BadgePill>
+                    <BadgePill style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>+{formatMoney(m.claims)}</BadgePill>
+                    <BadgePill style={{ backgroundColor: "#EEF3FB", color: COLORS.blueDark }}>+{formatMoney(m.commission)}</BadgePill>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-500">
+              <div className="rounded-2xl border border-dashed p-6 text-sm" style={{ borderColor: COLORS.border, color: COLORS.textSoft }}>
                 Todavía no hay clientes captados para esta sucursal.
               </div>
             )}
@@ -448,19 +519,29 @@ function JoinPage({ onCreateHost, onJoinPlayer, busy }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-      <CardBox className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-8 text-white">
-        <BadgePill className="mb-4 bg-white/10 text-white">MVP multiusuario</BadgePill>
-        <h2 className="text-4xl font-semibold leading-tight">
+      <div
+        className="rounded-[28px] p-8 text-white shadow-md border"
+        style={{
+          background: `linear-gradient(135deg, ${COLORS.blueDark}, ${COLORS.blue})`,
+          borderColor: COLORS.blue,
+        }}
+      >
+        <BadgePill style={{ backgroundColor: "rgba(255,255,255,0.14)", color: COLORS.white }}>
+          MVP multiusuario
+        </BadgePill>
+        <h2 className="mt-4 text-4xl font-semibold leading-tight">
           Cada jugador entra desde su propio dispositivo y el host controla la partida en vivo.
         </h2>
-        <p className="mt-4 max-w-2xl text-sm text-slate-200">
+        <p className="mt-4 max-w-2xl text-sm text-slate-100">
           Esta versión ya separa host, sucursal, intermediario, cliente y observador. El primero que selecciona el cliente lo bloquea para los demás.
         </p>
-      </CardBox>
+      </div>
 
       <CardBox className="p-6">
-        <h3 className="text-xl font-semibold">Entrar</h3>
-        <p className="mt-1 text-sm text-slate-500">Elige si vas a entrar como host o como jugador.</p>
+        <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Entrar</h3>
+        <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
+          Elige si vas a entrar como host o como jugador.
+        </p>
 
         <div className="mt-4 flex gap-2">
           <PanelButton active={mode === "player"} icon={Users} onClick={() => setMode("player")}>
@@ -473,9 +554,10 @@ function JoinPage({ onCreateHost, onJoinPlayer, busy }) {
 
         <div className="mt-5 space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Nombre</label>
+            <label className="mb-1 block text-sm font-medium" style={{ color: COLORS.blue }}>Nombre</label>
             <input
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-slate-500"
+              className="w-full rounded-2xl border px-4 py-3 text-sm outline-none"
+              style={{ borderColor: COLORS.border }}
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Tu nombre"
@@ -484,9 +566,10 @@ function JoinPage({ onCreateHost, onJoinPlayer, busy }) {
 
           {mode === "player" && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Código de partida</label>
+              <label className="mb-1 block text-sm font-medium" style={{ color: COLORS.blue }}>Código de partida</label>
               <input
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm uppercase outline-none focus:border-slate-500"
+                className="w-full rounded-2xl border px-4 py-3 text-sm uppercase outline-none"
+                style={{ borderColor: COLORS.border }}
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="ABCDE"
@@ -495,18 +578,14 @@ function JoinPage({ onCreateHost, onJoinPlayer, busy }) {
           )}
 
           {error && (
-            <div className="rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{error}</div>
+            <div className="rounded-2xl p-3 text-sm" style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>
+              {error}
+            </div>
           )}
 
-          <button
-            onClick={handleSubmit}
-            disabled={busy}
-            className={`w-full rounded-2xl px-4 py-3 text-sm font-medium text-white ${
-              busy ? "bg-slate-400" : "bg-slate-900 hover:bg-slate-800"
-            }`}
-          >
+          <ActionButton onClick={handleSubmit} disabled={busy} variant="orange" className="w-full">
             {busy ? "Procesando..." : mode === "host" ? "Crear partida" : "Entrar a la partida"}
-          </button>
+          </ActionButton>
         </div>
       </CardBox>
     </div>
@@ -516,11 +595,18 @@ function JoinPage({ onCreateHost, onJoinPlayer, busy }) {
 function WaitingPage({ player }) {
   return (
     <CardBox className="p-8 text-center">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white">
+      <div
+        className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-white"
+        style={{ backgroundColor: COLORS.orange }}
+      >
         <Users className="h-6 w-6" />
       </div>
-      <h3 className="mt-4 text-2xl font-semibold">Hola, {player?.name}</h3>
-      <p className="mt-2 text-slate-500">Entraste correctamente. Espera a que el host te asigne un rol.</p>
+      <h3 className="mt-4 text-2xl font-semibold" style={{ color: COLORS.blue }}>
+        Hola, {player?.name}
+      </h3>
+      <p className="mt-2" style={{ color: COLORS.textSoft }}>
+        Entraste correctamente. Espera a que el host te asigne un rol.
+      </p>
     </CardBox>
   );
 }
@@ -534,54 +620,48 @@ function CurrentClientBlock({ currentClient, revealFinancial = false }) {
 
   if (!currentClient) {
     return (
-      <div className="rounded-3xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+      <div className="rounded-3xl border border-dashed p-8 text-center text-sm" style={{ borderColor: COLORS.border, color: COLORS.textSoft }}>
         No hay cliente activo en este momento.
       </div>
     );
   }
 
   return (
-    <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="rounded-[28px] border bg-white p-6 shadow-sm" style={{ borderColor: COLORS.border }}>
       <div className="grid gap-6 lg:grid-cols-[0.75fr_1.25fr]">
         <ClientVisual visual={currentClient.visual} />
 
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-2xl font-semibold text-slate-900">{currentClient.name}</h3>
-            <BadgePill className="border border-slate-300 bg-white text-slate-700">
+            <h3 className="text-2xl font-semibold" style={{ color: COLORS.blueDark }}>{currentClient.name}</h3>
+            <BadgePill style={{ border: `1px solid ${COLORS.border}`, backgroundColor: COLORS.white, color: COLORS.blue }}>
               {currentClient.customerType}
             </BadgePill>
           </div>
 
-          <p className="mt-2 text-base font-medium text-slate-700">{currentClient.need}</p>
+          <p className="mt-2 text-base font-medium" style={{ color: COLORS.blue }}>{currentClient.need}</p>
 
-          <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
-            <div className="text-sm font-semibold text-slate-800">Contexto del caso</div>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{currentClient.context}</p>
+          <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+            <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>Contexto del caso</div>
+            <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>{currentClient.context}</p>
           </div>
 
           {revealFinancial && (
             <div className="mt-5 flex gap-3">
               {!revealed ? (
-                <button
-                  onClick={() => setRevealed(true)}
-                  className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                >
+                <ActionButton onClick={() => setRevealed(true)} variant="primary">
                   <span className="inline-flex items-center gap-2">
                     <Eye className="h-4 w-4" />
                     Revelar detalles
                   </span>
-                </button>
+                </ActionButton>
               ) : (
-                <button
-                  onClick={() => setRevealed(false)}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
+                <ActionButton onClick={() => setRevealed(false)} variant="secondary">
                   <span className="inline-flex items-center gap-2">
                     <EyeOff className="h-4 w-4" />
                     Ocultar detalles
                   </span>
-                </button>
+                </ActionButton>
               )}
             </div>
           )}
@@ -605,7 +685,7 @@ function CurrentClientBlock({ currentClient, revealFinancial = false }) {
 
             <div className="mt-4 flex flex-wrap gap-2">
               <BadgePill className={`border ${riskClasses(currentClient.risk)}`}>{currentClient.risk}</BadgePill>
-              <BadgePill className="bg-slate-200 text-slate-700">{currentClient.tag}</BadgePill>
+              <BadgePill style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>{currentClient.tag}</BadgePill>
             </div>
           </motion.div>
         )}
@@ -636,60 +716,52 @@ function HostPage({
       <CardBox className="p-6">
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
-            <div className="text-xs uppercase tracking-wide text-slate-500">Código de acceso</div>
+            <div className="text-xs uppercase tracking-wide" style={{ color: COLORS.textSoft }}>Código de acceso</div>
             <div className="mt-1 flex items-center gap-3">
-              <div className="text-3xl font-semibold tracking-[0.25em] text-slate-900">
+              <div className="text-3xl font-semibold tracking-[0.25em]" style={{ color: COLORS.blueDark }}>
                 {session?.code}
               </div>
-              <button
-                onClick={() => navigator.clipboard.writeText(session?.code || "")}
-                className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-              >
+              <ActionButton onClick={() => navigator.clipboard.writeText(session?.code || "")} variant="secondary">
                 <span className="inline-flex items-center gap-2">
                   <Copy className="h-4 w-4" />
                   Copiar
                 </span>
-              </button>
+              </ActionButton>
             </div>
-            <div className="mt-3 text-sm text-slate-500">
-              Estado de partida: <span className="font-medium text-slate-800">{session?.status || "lobby"}</span>
+            <div className="mt-3 text-sm" style={{ color: COLORS.textSoft }}>
+              Estado de partida: <span className="font-medium" style={{ color: COLORS.blue }}>{session?.status || "lobby"}</span>
             </div>
           </div>
 
           <div className="flex flex-wrap items-start gap-2 lg:justify-end">
-            <button
-              onClick={onPublishNextClient}
-              className="rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
-            >
+            <ActionButton onClick={onPublishNextClient} variant="orange">
               Siguiente cliente
-            </button>
-            <button
-              onClick={onCloseSession}
-              className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
+            </ActionButton>
+            <ActionButton onClick={onCloseSession} variant="secondary">
               Cerrar sesión local
-            </button>
+            </ActionButton>
           </div>
         </div>
       </CardBox>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         <CardBox className="p-6">
-          <h3 className="text-xl font-semibold">Jugadores conectados</h3>
-          <p className="mt-1 text-sm text-slate-500">Asigna el rol y la sucursal desde aquí.</p>
+          <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Jugadores conectados</h3>
+          <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>Asigna el rol y la sucursal desde aquí.</p>
 
           <div className="mt-4 space-y-3">
             {players.length ? (
               players.map((player) => (
-                <div key={player.id} className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
+                <div key={player.id} className="rounded-3xl border p-4" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <div className="font-semibold text-slate-900">{player.name}</div>
-                      <div className="text-sm text-slate-500">{roleLabel(player.role, player.branchId)}</div>
+                      <div className="font-semibold" style={{ color: COLORS.blueDark }}>{player.name}</div>
+                      <div className="text-sm" style={{ color: COLORS.textSoft }}>{roleLabel(player.role, player.branchId)}</div>
                     </div>
 
                     <select
-                      className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none"
+                      className="rounded-2xl border bg-white px-3 py-2 text-sm outline-none"
+                      style={{ borderColor: COLORS.border }}
                       value={roleOptionValue(player.role || "unassigned", player.branchId || "")}
                       onChange={(e) => {
                         const [role, branchId] = e.target.value.split("|");
@@ -708,7 +780,7 @@ function HostPage({
                 </div>
               ))
             ) : (
-              <div className="rounded-3xl border border-dashed border-slate-300 p-6 text-sm text-slate-500">
+              <div className="rounded-3xl border border-dashed p-6 text-sm" style={{ borderColor: COLORS.border, color: COLORS.textSoft }}>
                 Aún no han entrado jugadores.
               </div>
             )}
@@ -716,30 +788,32 @@ function HostPage({
         </CardBox>
 
         <CardBox className="p-6">
-          <h3 className="text-xl font-semibold">Cliente actual</h3>
-          <p className="mt-1 text-sm text-slate-500">Todos los intermediarios ven este mismo cliente.</p>
+          <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Cliente actual</h3>
+          <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>Todos los intermediarios ven este mismo cliente.</p>
 
           <div className="mt-4">
             {currentClient ? (
-              <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+              <div className="rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: "#FFF8F3" }}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <div className="text-sm text-slate-500">Cliente activo</div>
-                    <div className="text-xl font-semibold text-slate-900">{currentClient.name}</div>
+                    <div className="text-sm" style={{ color: COLORS.textSoft }}>Cliente activo</div>
+                    <div className="text-xl font-semibold" style={{ color: COLORS.blueDark }}>{currentClient.name}</div>
                   </div>
-                  <BadgePill className="bg-slate-900 text-white">{currentClient.status}</BadgePill>
+                  <BadgePill style={{ backgroundColor: COLORS.orange, color: COLORS.white }}>
+                    {currentClient.status}
+                  </BadgePill>
                 </div>
-                <p className="mt-3 text-sm text-slate-600">{currentClient.context}</p>
+                <p className="mt-3 text-sm" style={{ color: COLORS.textSoft }}>{currentClient.context}</p>
 
                 {currentClient.takenBy && (
-                  <div className="mt-4 rounded-2xl bg-white p-3 text-sm text-slate-700">
+                  <div className="mt-4 rounded-2xl bg-white p-3 text-sm" style={{ color: COLORS.blue }}>
                     Tomado por <span className="font-semibold">{currentClient.takenBy.playerName}</span> ·{" "}
                     {currentClient.takenBy.branchName}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="rounded-3xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+              <div className="rounded-3xl border border-dashed p-8 text-center text-sm" style={{ borderColor: COLORS.border, color: COLORS.textSoft }}>
                 No hay cliente activo. Pulsa “Siguiente cliente”.
               </div>
             )}
@@ -749,8 +823,8 @@ function HostPage({
 
       <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
         <CardBox className="p-6">
-          <h3 className="text-xl font-semibold">Resumen de sucursales</h3>
-          <p className="mt-1 text-sm text-slate-500">Vista general del desempeño.</p>
+          <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Resumen de sucursales</h3>
+          <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>Vista general del desempeño.</p>
 
           <div className="mt-4 space-y-4">
             {Object.values(branches).map((branch) => {
@@ -758,9 +832,9 @@ function HostPage({
               const semaforo = getSemaforo(cobertura);
 
               return (
-                <div key={branch.id} className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                <div key={branch.id} className="rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
                   <div className="mb-3 flex items-center justify-between">
-                    <div className="font-semibold text-slate-900">{branch.name}</div>
+                    <div className="font-semibold" style={{ color: COLORS.blueDark }}>{branch.name}</div>
                     <div className="flex items-center gap-2">
                       <div className={`h-3 w-3 rounded-full ${semaforo.dot}`} />
                       <span className={`text-sm font-semibold ${semaforo.text}`}>{cobertura}%</span>
@@ -781,21 +855,21 @@ function HostPage({
         </CardBox>
 
         <CardBox className="p-6">
-          <h3 className="text-xl font-semibold">Movimientos en vivo</h3>
-          <p className="mt-1 text-sm text-slate-500">Lo último que ha pasado en la partida.</p>
+          <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Movimientos en vivo</h3>
+          <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>Lo último que ha pasado en la partida.</p>
 
           <div className="mt-4 space-y-3">
             {history.length ? (
               history.slice(0, 10).map((item) => (
-                <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                  <div className="font-semibold text-slate-900">{item.clientName}</div>
-                  <div className="text-sm text-slate-500">
+                <div key={item.id} className="rounded-2xl border p-4" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+                  <div className="font-semibold" style={{ color: COLORS.blueDark }}>{item.clientName}</div>
+                  <div className="text-sm" style={{ color: COLORS.textSoft }}>
                     {item.playerName} · {item.branchName}
                   </div>
                 </div>
               ))
             ) : (
-              <div className="rounded-3xl border border-dashed border-slate-300 p-6 text-sm text-slate-500">
+              <div className="rounded-3xl border border-dashed p-6 text-sm" style={{ borderColor: COLORS.border, color: COLORS.textSoft }}>
                 Sin movimientos todavía.
               </div>
             )}
@@ -845,16 +919,16 @@ function IntermediaryPage({ player, session, onSelectClient }) {
       />
 
       <CardBox className="p-6">
-        <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4 text-sm">
-          <div className="font-semibold text-slate-900">Tu sucursal</div>
-          <div className="mt-1 text-slate-600">
+        <div className="rounded-3xl border p-4 text-sm" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+          <div className="font-semibold" style={{ color: COLORS.blueDark }}>Tu sucursal</div>
+          <div className="mt-1" style={{ color: COLORS.textSoft }}>
             {player.branchId === "bogota" ? "Sucursal Bogotá" : "Sucursal Medellín"}
           </div>
         </div>
       </CardBox>
 
       {!currentClient ? (
-        <CardBox className="p-8 text-center text-sm text-slate-500">
+        <CardBox className="p-8 text-center text-sm" style={{ color: COLORS.textSoft }}>
           No hay cliente activo en este momento. Espera a que el host publique uno.
         </CardBox>
       ) : (
@@ -864,64 +938,56 @@ function IntermediaryPage({ player, session, onSelectClient }) {
 
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-2xl font-semibold text-slate-900">{currentClient.name}</h3>
-                <BadgePill className="border border-slate-300 bg-white text-slate-700">
+                <h3 className="text-2xl font-semibold" style={{ color: COLORS.blueDark }}>{currentClient.name}</h3>
+                <BadgePill style={{ border: `1px solid ${COLORS.border}`, backgroundColor: COLORS.white, color: COLORS.blue }}>
                   {currentClient.customerType}
                 </BadgePill>
-                <BadgePill className="bg-slate-900 text-white">{currentClient.status}</BadgePill>
+                <BadgePill style={{ backgroundColor: COLORS.orange, color: COLORS.white }}>
+                  {currentClient.status}
+                </BadgePill>
               </div>
 
-              <p className="mt-2 text-base font-medium text-slate-700">{currentClient.need}</p>
+              <p className="mt-2 text-base font-medium" style={{ color: COLORS.blue }}>{currentClient.need}</p>
 
-              <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
-                <div className="text-sm font-semibold text-slate-800">Contexto del caso</div>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{currentClient.context}</p>
+              <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+                <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>Contexto del caso</div>
+                <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>{currentClient.context}</p>
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3">
                 {!revealed ? (
-                  <button
-                    onClick={() => setRevealed(true)}
-                    className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                  >
+                  <ActionButton onClick={() => setRevealed(true)} variant="primary">
                     <span className="inline-flex items-center gap-2">
                       <Eye className="h-4 w-4" />
                       Revelar detalles
                     </span>
-                  </button>
+                  </ActionButton>
                 ) : (
-                  <button
-                    onClick={() => setRevealed(false)}
-                    className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                  >
+                  <ActionButton onClick={() => setRevealed(false)} variant="secondary">
                     <span className="inline-flex items-center gap-2">
                       <EyeOff className="h-4 w-4" />
                       Ocultar detalles
                     </span>
-                  </button>
+                  </ActionButton>
                 )}
 
-                <button
+                <ActionButton
                   onClick={onSelectClient}
                   disabled={!revealed || currentClient.status !== "active"}
-                  className={`rounded-2xl px-4 py-2 text-sm font-medium text-white ${
-                    !revealed || currentClient.status !== "active"
-                      ? "cursor-not-allowed bg-slate-400"
-                      : "bg-emerald-600 hover:bg-emerald-700"
-                  }`}
+                  variant="orange"
                 >
                   Seleccionar cliente
-                </button>
+                </ActionButton>
               </div>
 
               {takenByOther && (
-                <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-800">
+                <div className="mt-4 rounded-2xl p-3 text-sm" style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>
                   Este cliente ya fue tomado por {currentClient.takenBy.playerName}.
                 </div>
               )}
 
               {takenByMe && (
-                <div className="mt-4 rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800">
+                <div className="mt-4 rounded-2xl p-3 text-sm" style={{ backgroundColor: "#E8F6EE", color: "#047857" }}>
                   Tú tomaste este cliente para {currentClient.takenBy.branchName}.
                 </div>
               )}
@@ -945,7 +1011,7 @@ function IntermediaryPage({ player, session, onSelectClient }) {
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   <BadgePill className={`border ${riskClasses(currentClient.risk)}`}>{currentClient.risk}</BadgePill>
-                  <BadgePill className="bg-slate-200 text-slate-700">{currentClient.tag}</BadgePill>
+                  <BadgePill style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>{currentClient.tag}</BadgePill>
                 </div>
               </motion.div>
             )}
@@ -987,11 +1053,11 @@ function ObservadorPage({ session }) {
         <CurrentClientBlock currentClient={currentClient} revealFinancial={false} />
 
         <CardBox className="p-6">
-          <h3 className="text-xl font-semibold">Resumen de sucursales</h3>
+          <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Resumen de sucursales</h3>
           <div className="mt-4 space-y-4">
             {Object.values(branches).map((branch) => (
-              <div key={branch.id} className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
-                <div className="font-semibold text-slate-900">{branch.name}</div>
+              <div key={branch.id} className="rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+                <div className="font-semibold" style={{ color: COLORS.blueDark }}>{branch.name}</div>
                 <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
                   <StatCard label="Primas" value={formatMoney(branch.primas)} />
                   <StatCard label="Siniestros" value={formatMoney(branch.siniestros)} />
@@ -1029,67 +1095,72 @@ function FinalPage({ session }) {
 
       <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
         <CardBox className="p-6">
-          <h3 className="text-xl font-semibold">Podio de sucursales</h3>
+          <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Podio de sucursales</h3>
 
           <div className="mt-4 space-y-3">
             {ranking.map((r, idx) => (
               <div
                 key={r.id}
-                className={`flex items-center justify-between rounded-3xl border p-4 ${
-                  idx === 0
-                    ? "border-amber-200 bg-amber-50"
-                    : "border-slate-200 bg-slate-50/70"
-                }`}
+                className="flex items-center justify-between rounded-3xl border p-4"
+                style={{
+                  borderColor: idx === 0 ? "#F7C59A" : COLORS.border,
+                  backgroundColor: idx === 0 ? "#FFF5EB" : COLORS.softBlue,
+                }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 font-bold text-white">
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-full font-bold text-white"
+                    style={{ backgroundColor: idx === 0 ? COLORS.orange : COLORS.blue }}
+                  >
                     {idx + 1}
                   </div>
                   <div>
-                    <div className="font-semibold text-slate-900">{r.name}</div>
-                    <div className="text-xs text-slate-500">Operatividad {getCobertura(r)}%</div>
+                    <div className="font-semibold" style={{ color: COLORS.blueDark }}>{r.name}</div>
+                    <div className="text-xs" style={{ color: COLORS.textSoft }}>Operatividad {getCobertura(r)}%</div>
                   </div>
                 </div>
-                <BadgePill className="bg-slate-900 text-white">{formatMoney(getUtilidad(r))}</BadgePill>
+                <BadgePill style={{ backgroundColor: COLORS.blue, color: COLORS.white }}>
+                  {formatMoney(getUtilidad(r))}
+                </BadgePill>
               </div>
             ))}
           </div>
         </CardBox>
 
         <CardBox className="p-6">
-          <h3 className="text-xl font-semibold">Reconocimientos</h3>
+          <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Reconocimientos</h3>
 
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
-              <div className="mb-2 flex items-center gap-2 font-semibold">
+            <div className="rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+              <div className="mb-2 flex items-center gap-2 font-semibold" style={{ color: COLORS.blue }}>
                 <Crown className="h-4 w-4" />
                 Sucursal ganadora
               </div>
-              <div className="text-2xl font-semibold text-slate-900">{ranking[0]?.name || "-"}</div>
+              <div className="text-2xl font-semibold" style={{ color: COLORS.blueDark }}>{ranking[0]?.name || "-"}</div>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
-              <div className="mb-2 flex items-center gap-2 font-semibold">
+            <div className="rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+              <div className="mb-2 flex items-center gap-2 font-semibold" style={{ color: COLORS.blue }}>
                 <Star className="h-4 w-4" />
                 Intermediario destacado
               </div>
-              <div className="text-2xl font-semibold text-slate-900">{bestPlayer?.[0] || "-"}</div>
+              <div className="text-2xl font-semibold" style={{ color: COLORS.blueDark }}>{bestPlayer?.[0] || "-"}</div>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
-              <div className="mb-2 flex items-center gap-2 font-semibold">
+            <div className="rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+              <div className="mb-2 flex items-center gap-2 font-semibold" style={{ color: COLORS.blue }}>
                 <CheckCircle2 className="h-4 w-4" />
                 Clientes captados
               </div>
-              <div className="text-2xl font-semibold text-slate-900">{history.length}</div>
+              <div className="text-2xl font-semibold" style={{ color: COLORS.blueDark }}>{history.length}</div>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
-              <div className="mb-2 flex items-center gap-2 font-semibold">
+            <div className="rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+              <div className="mb-2 flex items-center gap-2 font-semibold" style={{ color: COLORS.blue }}>
                 <PartyPopper className="h-4 w-4" />
                 Último movimiento
               </div>
-              <div className="text-lg font-semibold text-slate-900">{history[0]?.clientName || "-"}</div>
+              <div className="text-lg font-semibold" style={{ color: COLORS.blueDark }}>{history[0]?.clientName || "-"}</div>
             </div>
           </div>
         </CardBox>
@@ -1106,7 +1177,6 @@ export default function App() {
   const [sessionId, setSessionId] = useState(persisted?.sessionId || "");
   const [isHost, setIsHost] = useState(Boolean(persisted?.isHost));
   const [screen, setScreen] = useState("inicio");
-  const [gameTab, setGameTab] = useState("panel");
   const [session, setSession] = useState(null);
   const [players, setPlayers] = useState([]);
   const [playerDoc, setPlayerDoc] = useState(null);
@@ -1345,15 +1415,14 @@ export default function App() {
     setPlayerDoc(null);
     setIsHost(false);
     setScreen("inicio");
-    setGameTab("panel");
   };
 
   if (!authReady) {
     return (
-      <div className="min-h-screen bg-slate-100 p-6 text-slate-900">
+      <div className="min-h-screen p-6" style={{ backgroundColor: COLORS.bg, color: COLORS.blueDark }}>
         <div className="mx-auto max-w-7xl">
           <LogoHeader />
-          <div className="mt-10 rounded-3xl border border-slate-200 bg-white p-8 text-slate-500">
+          <div className="mt-10 rounded-3xl border bg-white p-8" style={{ borderColor: COLORS.border, color: COLORS.textSoft }}>
             Cargando autenticación...
           </div>
         </div>
@@ -1361,19 +1430,15 @@ export default function App() {
     );
   }
 
-  const branchIntermediaries = players.filter(
-    (p) => p.role === "intermediary" && p.branchId === "bogota"
-  );
-
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className="min-h-screen" style={{ backgroundColor: COLORS.bg, color: COLORS.blueDark }}>
       <div className="mx-auto max-w-7xl p-6">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="mb-3">
               <LogoHeader />
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm" style={{ color: COLORS.textSoft }}>
               Host, sucursal, intermediario, cliente y observador en tiempo real.
             </p>
           </div>
@@ -1382,6 +1447,13 @@ export default function App() {
             <PanelButton active={screen === "inicio"} icon={LayoutDashboard} onClick={() => setScreen("inicio")}>
               Inicio
             </PanelButton>
+
+            {!sessionId && (
+              <PanelButton active={screen === "registro"} icon={Users} onClick={() => setScreen("registro")}>
+                Entrar
+              </PanelButton>
+            )}
+
             <PanelButton active={screen === "reglas"} icon={ListChecks} onClick={() => setScreen("reglas")}>
               Reglas
             </PanelButton>
@@ -1394,54 +1466,219 @@ export default function App() {
             <PanelButton active={screen === "final"} icon={Trophy} onClick={() => setScreen("final")}>
               Ranking final
             </PanelButton>
+
             {(sessionId || session) && (
-              <button
-                onClick={closeLocalSession}
-                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
+              <ActionButton onClick={closeLocalSession} variant="secondary">
                 <span className="inline-flex items-center gap-2">
                   <LogOut className="h-4 w-4" />
                   Salir
                 </span>
-              </button>
+              </ActionButton>
             )}
           </div>
         </div>
 
         {globalError && (
-          <div className="mb-4 rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{globalError}</div>
+          <div className="mb-4 rounded-2xl p-3 text-sm" style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>
+            {globalError}
+          </div>
         )}
 
         {!sessionId ? (
-          <JoinPage onCreateHost={createHostSession} onJoinPlayer={joinPlayerSession} busy={busy} />
+          <AnimatePresence mode="wait">
+            {screen === "inicio" && (
+              <motion.div
+                key="inicio_publico"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="space-y-6"
+              >
+                <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                  <div
+                    className="rounded-[28px] p-8 text-white shadow-md border"
+                    style={{
+                      background: `linear-gradient(135deg, ${COLORS.blueDark}, ${COLORS.blue})`,
+                      borderColor: COLORS.blue,
+                    }}
+                  >
+                    <BadgePill style={{ backgroundColor: "rgba(255,255,255,0.14)", color: COLORS.white }}>
+                      Entorno corporativo
+                    </BadgePill>
+
+                    <h2 className="mt-4 max-w-2xl text-4xl font-semibold leading-tight">
+                      Cada decisión comercial impacta el desempeño de la sucursal en tiempo real.
+                    </h2>
+
+                    <p className="mt-4 max-w-2xl text-sm text-slate-100">
+                      Los intermediarios pertenecen a una sucursal, los clientes llegan uno por uno y el resultado final se mide en cobertura del gasto meta, utilidad y capacidad comercial.
+                    </p>
+
+                    <div className="mt-6 flex flex-wrap gap-3">
+                      <ActionButton onClick={() => setScreen("registro")} variant="orange">
+                        <span className="inline-flex items-center gap-2">
+                          Empezar
+                          <ChevronRight className="h-4 w-4" />
+                        </span>
+                      </ActionButton>
+
+                      <ActionButton onClick={() => setScreen("reglas")} variant="secondary">
+                        Ver dinámica
+                      </ActionButton>
+                    </div>
+                  </div>
+
+                  <CardBox className="p-6">
+                    <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>
+                      Roles del juego
+                    </h3>
+                    <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
+                      Cada rol vive una experiencia distinta.
+                    </p>
+
+                    <div className="mt-4 space-y-4">
+                      <div
+                        className="rounded-3xl border p-4"
+                        style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}
+                      >
+                        <div className="mb-1 font-semibold" style={{ color: COLORS.blueDark }}>
+                          Sucursal
+                        </div>
+                        <p className="text-sm" style={{ color: COLORS.textSoft }}>
+                          Arranca en cero y debe ir cubriendo un gasto meta de 500 millones.
+                        </p>
+                      </div>
+
+                      <div
+                        className="rounded-3xl border p-4"
+                        style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}
+                      >
+                        <div className="mb-1 font-semibold" style={{ color: COLORS.blueDark }}>
+                          Intermediario
+                        </div>
+                        <p className="text-sm" style={{ color: COLORS.textSoft }}>
+                          Tiene fortalezas, se muestra en qué líneas de negocio tiene idoneidad y contexto comercial.
+                        </p>
+                      </div>
+
+                      <div
+                        className="rounded-3xl border p-4"
+                        style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}
+                      >
+                        <div className="mb-1 font-semibold" style={{ color: COLORS.blueDark }}>
+                          Cliente
+                        </div>
+                        <p className="text-sm" style={{ color: COLORS.textSoft }}>
+                          Un contexto sobre cada uno de ellos.
+                        </p>
+                      </div>
+                    </div>
+                  </CardBox>
+                </div>
+              </motion.div>
+            )}
+
+            {screen === "registro" && (
+              <motion.div
+                key="registro_publico"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+              >
+                <JoinPage
+                  onCreateHost={createHostSession}
+                  onJoinPlayer={joinPlayerSession}
+                  busy={busy}
+                />
+              </motion.div>
+            )}
+
+            {screen === "reglas" && (
+              <motion.div
+                key="reglas_publico"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+              >
+                <CardBox className="p-6">
+                  <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>
+                    Reglas base
+                  </h3>
+
+                  <div className="mt-4 space-y-4">
+                    {[
+                      "Hay 2 sucursales, 4 intermediarios y 14 clientes base.",
+                      "El host asigna rol a cada jugador que entra.",
+                      "Todos los intermediarios ven el mismo cliente al tiempo.",
+                      "El primero que lo selecciona lo bloquea para los demás.",
+                      "La sucursal del intermediario se actualiza en vivo.",
+                    ].map((rule, idx) => (
+                      <div
+                        key={idx}
+                        className="flex gap-3 rounded-3xl border p-4"
+                        style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
+                      >
+                        <div
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white"
+                          style={{ backgroundColor: idx % 2 === 0 ? COLORS.blue : COLORS.orange }}
+                        >
+                          {idx + 1}
+                        </div>
+                        <p className="text-sm" style={{ color: COLORS.blueDark }}>
+                          {rule}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 flex gap-3">
+                    <ActionButton onClick={() => setScreen("inicio")} variant="secondary">
+                      Volver
+                    </ActionButton>
+                    <ActionButton onClick={() => setScreen("registro")} variant="orange">
+                      Empezar
+                    </ActionButton>
+                  </div>
+                </CardBox>
+              </motion.div>
+            )}
+          </AnimatePresence>
         ) : (
           <AnimatePresence mode="wait">
             {screen === "inicio" && (
-              <motion.div key="inicio" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-6">
+              <motion.div
+                key="inicio_privado"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="space-y-6"
+              >
                 <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-                  <CardBox className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-8 text-white shadow-md">
-                    <BadgePill className="mb-4 bg-white/10 text-white">MVP tiempo real</BadgePill>
-                    <h2 className="max-w-2xl text-4xl font-semibold leading-tight">
+                  <CardBox
+                    className="p-8 text-white shadow-md"
+                    style={{ background: `linear-gradient(135deg, ${COLORS.blueDark}, ${COLORS.blue})`, borderColor: COLORS.blue }}
+                  >
+                    <BadgePill style={{ backgroundColor: "rgba(255,255,255,0.14)", color: COLORS.white }}>
+                      MVP tiempo real
+                    </BadgePill>
+                    <h2 className="mt-4 max-w-2xl text-4xl font-semibold leading-tight">
                       Esta base ya soporta host, jugadores conectados y bloqueo del primer intermediario que selecciona.
                     </h2>
-                    <p className="mt-4 max-w-2xl text-sm text-slate-200">
+                    <p className="mt-4 max-w-2xl text-sm text-slate-100">
                       El host asigna roles, publica clientes y el tablero se mueve en vivo cuando un intermediario gana el cliente.
                     </p>
                     <div className="mt-6 flex flex-wrap gap-3">
-                      <button
-                        onClick={() => setScreen("juego")}
-                        className="rounded-2xl bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100"
-                      >
+                      <ActionButton onClick={() => setScreen("juego")} variant="orange">
                         <span className="inline-flex items-center gap-2">
                           Ir al juego
                           <ChevronRight className="h-4 w-4" />
                         </span>
-                      </button>
+                      </ActionButton>
                     </div>
                   </CardBox>
 
                   <CardBox className="p-6">
-                    <h3 className="text-xl font-semibold">Estado actual</h3>
+                    <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Estado actual</h3>
                     <div className="mt-4 grid gap-3">
                       <StatCard label="Código" value={session?.code || "-"} />
                       <StatCard label="Jugadores" value={players.length} />
@@ -1454,9 +1691,14 @@ export default function App() {
             )}
 
             {screen === "reglas" && (
-              <motion.div key="reglas" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+              <motion.div
+                key="reglas_privado"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+              >
                 <CardBox className="p-6">
-                  <h3 className="text-xl font-semibold">Reglas base</h3>
+                  <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Reglas base</h3>
                   <div className="mt-4 space-y-4">
                     {[
                       "Hay 2 sucursales, 4 intermediarios y 14 clientes base.",
@@ -1465,11 +1707,14 @@ export default function App() {
                       "El primero que lo selecciona lo bloquea para los demás.",
                       "La sucursal del intermediario se actualiza en vivo.",
                     ].map((rule, idx) => (
-                      <div key={idx} className="flex gap-3 rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white">
+                      <div key={idx} className="flex gap-3 rounded-3xl border p-4" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+                        <div
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white"
+                          style={{ backgroundColor: idx % 2 === 0 ? COLORS.blue : COLORS.orange }}
+                        >
                           {idx + 1}
                         </div>
-                        <p className="text-sm text-slate-700">{rule}</p>
+                        <p className="text-sm" style={{ color: COLORS.blueDark }}>{rule}</p>
                       </div>
                     ))}
                   </div>
@@ -1478,7 +1723,12 @@ export default function App() {
             )}
 
             {screen === "juego" && (
-              <motion.div key="juego" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+              <motion.div
+                key="juego"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+              >
                 {isHost ? (
                   <HostPage
                     session={session}
@@ -1488,7 +1738,9 @@ export default function App() {
                     onCloseSession={closeLocalSession}
                   />
                 ) : !playerDoc ? (
-                  <CardBox className="p-8 text-sm text-slate-500">Cargando jugador...</CardBox>
+                  <CardBox className="p-8 text-sm" style={{ color: COLORS.textSoft }}>
+                    Cargando jugador...
+                  </CardBox>
                 ) : playerDoc.role === "unassigned" ? (
                   <WaitingPage player={playerDoc} />
                 ) : playerDoc.role === "sucursal" ? (
@@ -1504,7 +1756,12 @@ export default function App() {
             )}
 
             {screen === "facilitador" && (
-              <motion.div key="facilitador" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+              <motion.div
+                key="facilitador"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+              >
                 <HostPage
                   session={session}
                   players={players}
@@ -1516,7 +1773,12 @@ export default function App() {
             )}
 
             {screen === "final" && (
-              <motion.div key="final" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+              <motion.div
+                key="final"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+              >
                 <FinalPage session={session} />
               </motion.div>
             )}
