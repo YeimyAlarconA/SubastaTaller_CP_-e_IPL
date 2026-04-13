@@ -1515,15 +1515,15 @@ export default function App() {
                     </p>
 
                     <div className="mt-6 flex flex-wrap gap-3">
+                      <ActionButton onClick={() => setScreen("reglas")} variant="secondary">
+                        Ver dinámica
+                      </ActionButton>
+
                       <ActionButton onClick={() => setScreen("registro")} variant="orange">
                         <span className="inline-flex items-center gap-2">
                           Empezar
                           <ChevronRight className="h-4 w-4" />
                         </span>
-                      </ActionButton>
-
-                      <ActionButton onClick={() => setScreen("reglas")} variant="secondary">
-                        Ver dinámica
                       </ActionButton>
                     </div>
                   </div>
