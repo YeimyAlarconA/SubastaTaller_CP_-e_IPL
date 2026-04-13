@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -26,9 +26,6 @@ import {
   LogOut,
   UserRound,
   Building,
-  ShieldCheck,
-  Clock3,
-  TriangleAlert,
 } from "lucide-react";
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
 import {
@@ -59,37 +56,6 @@ const COLORS = {
   border: "#D9E1F0",
   textSoft: "#6B7280",
 };
-
-const INTERMEDIARY_PROFILES = [
-  {
-    id: "juan_perez",
-    displayName: "Juan Pérez",
-    branchId: "bogota",
-    idoneidad: ["Fianzas", "Generales"],
-    antiguedad: "6 años",
-  },
-  {
-    id: "laura_gomez",
-    displayName: "Laura Gómez",
-    branchId: "bogota",
-    idoneidad: ["Autos", "Vida"],
-    antiguedad: "4 años",
-  },
-  {
-    id: "natalia_ruiz",
-    displayName: "Natalia Ruiz",
-    branchId: "medellin",
-    idoneidad: ["Autos", "Fianzas"],
-    antiguedad: "8 años",
-  },
-  {
-    id: "camilo_torres",
-    displayName: "Camilo Torres",
-    branchId: "medellin",
-    idoneidad: ["Vida", "Generales"],
-    antiguedad: "5 años",
-  },
-];
 
 function round2(n) {
   return Math.round(n * 100) / 100;
@@ -189,10 +155,6 @@ function roleLabel(role, branchId = "") {
 
 function roleOptionValue(role, branchId = "") {
   return `${role}|${branchId}`;
-}
-
-function getProfileById(profileId) {
-  return INTERMEDIARY_PROFILES.find((p) => p.id === profileId) || null;
 }
 
 async function ensureAnonAuth() {
@@ -384,7 +346,7 @@ function ClientTypeBadge({ type }) {
   );
 }
 
-function BranchBoard({ branch, movements, alerts = [] }) {
+function BranchBoard({ branch, movements }) {
   if (!branch) return null;
 
   const resultado = getResultado(branch);
@@ -494,41 +456,27 @@ function BranchBoard({ branch, movements, alerts = [] }) {
         <div className="rounded-3xl border p-4" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
           <div className="mb-4 flex items-center gap-2 text-sm font-semibold" style={{ color: COLORS.blue }}>
             <Bell className="h-4 w-4" />
-            Novedades
+            Movimientos recientes
           </div>
 
           <div className="space-y-3">
-            {alerts.length > 0 && alerts.slice(0, 3).map((alert) => (
-              <div
-                key={alert.id}
-                className="rounded-2xl border p-3"
-                style={{ borderColor: "#FFD7BA", backgroundColor: "#FFF7F1" }}
-              >
-                <div className="flex items-start gap-2">
-                  <TriangleAlert className="mt-0.5 h-4 w-4" style={{ color: COLORS.orange }} />
-                  <div className="text-sm" style={{ color: COLORS.orange }}>
-                    {alert.message}
-                  </div>
-                </div>
-              </div>
-            ))}
-
             {movements.length ? (
-              movements.slice(0, 3).map((m) => (
+              movements.slice(0, 5).map((m) => (
                 <div key={m.id} className="rounded-2xl border bg-white p-3" style={{ borderColor: COLORS.border }}>
                   <div className="text-sm font-semibold" style={{ color: COLORS.blueDark }}>{m.clientName}</div>
                   <div className="mt-1 text-xs" style={{ color: COLORS.textSoft }}>Entró por {m.playerName}</div>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs">
                     <BadgePill style={{ backgroundColor: "#E7F0FF", color: COLORS.blue }}>+{formatMoney(m.premium)}</BadgePill>
                     <BadgePill style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>+{formatMoney(m.claims)}</BadgePill>
+                    <BadgePill style={{ backgroundColor: "#EEF3FB", color: COLORS.blueDark }}>+{formatMoney(m.commission)}</BadgePill>
                   </div>
                 </div>
               ))
-            ) : alerts.length === 0 ? (
+            ) : (
               <div className="rounded-2xl border border-dashed p-6 text-sm" style={{ borderColor: COLORS.border, color: COLORS.textSoft }}>
-                Todavía no hay novedades para esta sucursal.
+                Todavía no hay clientes captados para esta sucursal.
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       </div>
@@ -654,91 +602,6 @@ function WaitingPage({ player }) {
       <p className="mt-2" style={{ color: COLORS.textSoft }}>
         Entraste correctamente. Espera a que el host te asigne un rol.
       </p>
-    </CardBox>
-  );
-}
-
-function IntermediaryProfileCard({ profile }) {
-  if (!profile) {
-    return (
-      <CardBox className="p-6">
-        <div className="rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
-          <div className="font-semibold" style={{ color: COLORS.blueDark }}>
-            Esperando intermediario asignado
-          </div>
-          <div className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
-            El host ya te asignó el rol, pero todavía no selecciona qué intermediario representas.
-          </div>
-        </div>
-      </CardBox>
-    );
-  }
-
-  return (
-    <CardBox className="p-6">
-      <div
-        className="rounded-[28px] border p-5"
-        style={{
-          borderColor: COLORS.blue,
-          background: "linear-gradient(135deg, #EEF3FB, #FFFFFF)",
-        }}
-      >
-        <div className="flex flex-wrap items-center gap-3">
-          <div
-            className="flex h-12 w-12 items-center justify-center rounded-2xl text-white"
-            style={{ backgroundColor: COLORS.blue }}
-          >
-            <ShieldCheck className="h-6 w-6" />
-          </div>
-          <div>
-            <div className="text-xl font-semibold" style={{ color: COLORS.blueDark }}>
-              {profile.displayName}
-            </div>
-            <div className="text-sm" style={{ color: COLORS.textSoft }}>
-              {profile.branchId === "bogota" ? "Sucursal Bogotá" : "Sucursal Medellín"}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border p-4" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
-            <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: COLORS.blue }}>
-              <Building2 className="h-4 w-4" />
-              Sucursal
-            </div>
-            <div className="mt-2 text-sm" style={{ color: COLORS.blueDark }}>
-              {profile.branchId === "bogota" ? "Bogotá" : "Medellín"}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border p-4" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
-            <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: COLORS.blue }}>
-              <ShieldCheck className="h-4 w-4" />
-              Idoneidad
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {profile.idoneidad.map((line) => (
-                <BadgePill
-                  key={line}
-                  style={{ backgroundColor: "#E7F0FF", color: COLORS.blueDark }}
-                >
-                  {line}
-                </BadgePill>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border p-4" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
-            <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: COLORS.blue }}>
-              <Clock3 className="h-4 w-4" />
-              Antigüedad
-            </div>
-            <div className="mt-2 text-sm" style={{ color: COLORS.blueDark }}>
-              {profile.antiguedad}
-            </div>
-          </div>
-        </div>
-      </div>
     </CardBox>
   );
 }
@@ -995,7 +858,7 @@ function GameSetupPage({
       <CardBox className="p-6">
         <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Jugadores conectados</h3>
         <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
-          Asigna rol y perfil del personaje.
+          Asigna rol, sucursal y si aplica, el cliente específico.
         </p>
 
         <div className="mt-4 space-y-4">
@@ -1006,7 +869,7 @@ function GameSetupPage({
                 className="rounded-3xl border p-4"
                 style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
               >
-                <div className="grid gap-4 lg:grid-cols-[1fr_220px_280px]">
+                <div className="grid gap-4 lg:grid-cols-[1fr_220px_260px]">
                   <div>
                     <div className="font-semibold" style={{ color: COLORS.blueDark }}>
                       {player.name}
@@ -1022,13 +885,12 @@ function GameSetupPage({
                     value={roleOptionValue(player.role || "unassigned", player.branchId || "")}
                     onChange={(e) => {
                       const [role, branchId] = e.target.value.split("|");
-                      onAssignRole({
-                        playerId: player.id,
+                      onAssignRole(
+                        player.id,
                         role,
-                        branchId: role === "sucursal" ? (branchId || "") : "",
-                        assignedClientId: role === "cliente" ? player.assignedClientId || "" : "",
-                        assignedIntermediaryId: role === "intermediary" ? player.assignedIntermediaryId || "" : "",
-                      });
+                        branchId || "",
+                        role === "cliente" ? player.assignedClientId || "" : ""
+                      );
                     }}
                   >
                     <option value="unassigned|">Sin asignar</option>
@@ -1036,7 +898,8 @@ function GameSetupPage({
                     <option value="cliente|">Cliente</option>
                     <option value="sucursal|bogota">Sucursal Bogotá</option>
                     <option value="sucursal|medellin">Sucursal Medellín</option>
-                    <option value="intermediary|">Intermediario</option>
+                    <option value="intermediary|bogota">Intermediario Bogotá</option>
+                    <option value="intermediary|medellin">Intermediario Medellín</option>
                   </select>
 
                   {player.role === "cliente" ? (
@@ -1045,41 +908,13 @@ function GameSetupPage({
                       style={{ borderColor: COLORS.border }}
                       value={player.assignedClientId || ""}
                       onChange={(e) =>
-                        onAssignRole({
-                          playerId: player.id,
-                          role: "cliente",
-                          branchId: "",
-                          assignedClientId: e.target.value,
-                          assignedIntermediaryId: "",
-                        })
+                        onAssignRole(player.id, "cliente", "", e.target.value)
                       }
                     >
                       <option value="">Seleccionar cliente</option>
                       {seedClients.map((client) => (
                         <option key={client.id} value={String(client.id)}>
                           {client.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : player.role === "intermediary" ? (
-                    <select
-                      className="rounded-2xl border bg-white px-3 py-2 text-sm outline-none"
-                      style={{ borderColor: COLORS.border }}
-                      value={player.assignedIntermediaryId || ""}
-                      onChange={(e) =>
-                        onAssignRole({
-                          playerId: player.id,
-                          role: "intermediary",
-                          branchId: "",
-                          assignedClientId: "",
-                          assignedIntermediaryId: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="">Seleccionar intermediario</option>
-                      {INTERMEDIARY_PROFILES.map((profile) => (
-                        <option key={profile.id} value={profile.id}>
-                          {profile.displayName}
                         </option>
                       ))}
                     </select>
@@ -1108,7 +943,6 @@ function FacilitatorPage({
   const currentClient = session?.currentClient || null;
   const history = session?.history || [];
   const branches = session?.branches || {};
-  const alerts = session?.alerts || [];
 
   return (
     <div className="space-y-6">
@@ -1129,40 +963,14 @@ function FacilitatorPage({
 
       <FacilitatorClientCard currentClient={currentClient} />
 
-      {alerts.length > 0 && (
-        <CardBox className="p-6">
-          <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>
-            Alertas IPL
-          </h3>
-          <div className="mt-4 space-y-3">
-            {alerts.slice(0, 5).map((alert) => (
-              <div
-                key={alert.id}
-                className="rounded-2xl border p-4"
-                style={{ borderColor: "#FFD7BA", backgroundColor: "#FFF7F1" }}
-              >
-                <div className="flex items-start gap-2">
-                  <TriangleAlert className="mt-0.5 h-4 w-4" style={{ color: COLORS.orange }} />
-                  <div className="text-sm" style={{ color: COLORS.orange }}>
-                    {alert.message}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardBox>
-      )}
-
       <div className="grid gap-6 lg:grid-cols-2">
         <BranchBoard
           branch={branches.bogota}
           movements={history.filter((m) => m.branchId === "bogota")}
-          alerts={alerts.filter((a) => a.branchId === "bogota")}
         />
         <BranchBoard
           branch={branches.medellin}
           movements={history.filter((m) => m.branchId === "medellin")}
-          alerts={alerts.filter((a) => a.branchId === "medellin")}
         />
       </div>
 
@@ -1207,7 +1015,6 @@ function FacilitatorPage({
 function SucursalPage({ player, session }) {
   const branch = session?.branches?.[player.branchId];
   const movements = (session?.history || []).filter((m) => m.branchId === player.branchId);
-  const alerts = (session?.alerts || []).filter((a) => a.branchId === player.branchId);
 
   return (
     <div className="space-y-6">
@@ -1216,7 +1023,7 @@ function SucursalPage({ player, session }) {
         subtitle={`Bienvenida, ${player.name}. Aquí ves solo el tablero de tu sucursal.`}
         icon={Building2}
       />
-      <BranchBoard branch={branch} movements={movements} alerts={alerts} />
+      <BranchBoard branch={branch} movements={movements} />
     </div>
   );
 }
@@ -1224,9 +1031,6 @@ function SucursalPage({ player, session }) {
 function IntermediaryPage({ player, session, onSelectClient }) {
   const currentClient = session?.currentClient || null;
   const [revealed, setRevealed] = useState(false);
-  const profile = getProfileById(player?.assignedIntermediaryId || "");
-  const alerts = session?.alerts || [];
-  const myLatestAlert = alerts.find((a) => a.playerId === player.id);
 
   useEffect(() => {
     setRevealed(false);
@@ -1242,22 +1046,18 @@ function IntermediaryPage({ player, session, onSelectClient }) {
     <div className="space-y-6">
       <SectionHeader
         title="Panel de intermediario"
-        subtitle={`${player.name} · ${profile?.displayName || "Sin intermediario asignado"}`}
+        subtitle={`${player.name} · ${roleLabel(player.role, player.branchId)}`}
         icon={Users}
       />
 
-      <IntermediaryProfileCard profile={profile} />
-
-      {myLatestAlert && (
-        <CardBox className="p-4" style={{ backgroundColor: "#FFF7F1", borderColor: "#FFD7BA" }}>
-          <div className="flex items-start gap-2">
-            <TriangleAlert className="mt-0.5 h-4 w-4" style={{ color: COLORS.orange }} />
-            <div className="text-sm" style={{ color: COLORS.orange }}>
-              {myLatestAlert.message}
-            </div>
+      <CardBox className="p-6">
+        <div className="rounded-3xl border p-4 text-sm" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+          <div className="font-semibold" style={{ color: COLORS.blueDark }}>Tu sucursal</div>
+          <div className="mt-1" style={{ color: COLORS.textSoft }}>
+            {player.branchId === "bogota" ? "Sucursal Bogotá" : "Sucursal Medellín"}
           </div>
-        </CardBox>
-      )}
+        </div>
+      </CardBox>
 
       {!currentClient ? (
         <CardBox className="p-8 text-center text-sm" style={{ color: COLORS.textSoft }}>
@@ -1270,18 +1070,14 @@ function IntermediaryPage({ player, session, onSelectClient }) {
 
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-2xl font-semibold" style={{ color: COLORS.blueDark }}>
-                  {currentClient.name}
-                </h3>
+                <h3 className="text-2xl font-semibold" style={{ color: COLORS.blueDark }}>{currentClient.name}</h3>
                 <ClientTypeBadge type={currentClient.customerType} />
                 <BadgePill style={{ backgroundColor: COLORS.orange, color: COLORS.white }}>
                   {currentClient.status}
                 </BadgePill>
               </div>
 
-              <p className="mt-2 text-base font-medium" style={{ color: COLORS.blue }}>
-                {currentClient.need}
-              </p>
+              <p className="mt-2 text-base font-medium" style={{ color: COLORS.blue }}>{currentClient.need}</p>
 
               <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
                 <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>Contexto del caso</div>
@@ -1307,7 +1103,7 @@ function IntermediaryPage({ player, session, onSelectClient }) {
 
                 <ActionButton
                   onClick={onSelectClient}
-                  disabled={!revealed || currentClient.status !== "active" || !profile}
+                  disabled={!revealed || currentClient.status !== "active"}
                   variant="orange"
                 >
                   Seleccionar cliente
@@ -1392,12 +1188,10 @@ function ObservadorPage({ session }) {
         <BranchBoard
           branch={branches.bogota}
           movements={(session?.history || []).filter((m) => m.branchId === "bogota")}
-          alerts={(session?.alerts || []).filter((a) => a.branchId === "bogota")}
         />
         <BranchBoard
           branch={branches.medellin}
           movements={(session?.history || []).filter((m) => m.branchId === "medellin")}
-          alerts={(session?.alerts || []).filter((a) => a.branchId === "medellin")}
         />
       </div>
     </div>
@@ -1576,7 +1370,6 @@ export default function App() {
         currentClient: null,
         remainingClients: seedClients,
         history: [],
-        alerts: [],
         branches: makeBranches(),
       });
 
@@ -1619,7 +1412,6 @@ export default function App() {
           role: "unassigned",
           branchId: "",
           assignedClientId: "",
-          assignedIntermediaryId: "",
           joinedAtMs: Date.now(),
         },
         { merge: true }
@@ -1637,27 +1429,13 @@ export default function App() {
     }
   };
 
-  const assignRole = async ({
-    playerId,
-    role,
-    branchId = "",
-    assignedClientId = "",
-    assignedIntermediaryId = "",
-  }) => {
+  const assignRole = async (playerId, role, branchId = "", assignedClientId = "") => {
     if (!sessionId) return;
-
-    let finalBranchId = branchId;
-    if (role === "intermediary" && assignedIntermediaryId) {
-      const profile = getProfileById(assignedIntermediaryId);
-      finalBranchId = profile?.branchId || "";
-    }
-
     const ref = doc(db, "sessions", sessionId, "players", playerId);
     await updateDoc(ref, {
       role,
-      branchId: role === "sucursal" || role === "intermediary" ? finalBranchId : "",
+      branchId,
       assignedClientId: role === "cliente" ? assignedClientId : "",
-      assignedIntermediaryId: role === "intermediary" ? assignedIntermediaryId : "",
     });
   };
 
@@ -1716,37 +1494,8 @@ export default function App() {
           throw new Error("Este cliente ya no está disponible.");
         }
 
-        const playerSnap = await tx.get(doc(db, "sessions", sessionId, "players", playerDoc.id));
-        const playerData = playerSnap.data();
-        const profile = getProfileById(playerData?.assignedIntermediaryId || "");
-
-        if (!profile) {
-          throw new Error("No tienes un intermediario asignado.");
-        }
-
-        const hasIdoneidad = profile.idoneidad.includes(current.line);
-        const alerts = [...(data.alerts || [])];
-
-        if (!hasIdoneidad) {
-          const message = `${profile.displayName} intentó tomar ${current.name} – ${current.line}, pero no tiene idoneidad en ${current.line}.`;
-          const alertObj = {
-            id: `a_${Date.now()}`,
-            type: "ipl_block",
-            createdAtMs: Date.now(),
-            message,
-            branchId: profile.branchId,
-            playerId: playerDoc.id,
-            profileId: profile.id,
-          };
-
-          tx.update(ref, {
-            alerts: [alertObj, ...alerts].slice(0, 50),
-          });
-          return;
-        }
-
         const branches = JSON.parse(JSON.stringify(data.branches || makeBranches()));
-        const target = branches[profile.branchId];
+        const target = branches[playerDoc.branchId];
         if (!target) throw new Error("El intermediario no tiene sucursal asignada.");
 
         target.primas = round2(target.primas + current.premium);
@@ -1759,8 +1508,8 @@ export default function App() {
           clientId: current.id,
           clientName: current.name,
           playerId: playerDoc.id,
-          playerName: profile.displayName,
-          branchId: profile.branchId,
+          playerName: playerDoc.name,
+          branchId: playerDoc.branchId,
           branchName: target.name,
           premium: current.premium,
           claims: current.claims,
@@ -1775,8 +1524,8 @@ export default function App() {
             selectedAtMs: Date.now(),
             takenBy: {
               playerId: playerDoc.id,
-              playerName: profile.displayName,
-              branchId: profile.branchId,
+              playerName: playerDoc.name,
+              branchId: playerDoc.branchId,
               branchName: target.name,
             },
           },
@@ -1941,7 +1690,7 @@ export default function App() {
                           Intermediario
                         </div>
                         <p className="text-sm" style={{ color: COLORS.textSoft }}>
-                          Tiene perfil fijo, sucursal, idoneidad y antigüedad.
+                          Tiene fortalezas, se muestra en qué líneas de negocio tiene idoneidad y contexto comercial.
                         </p>
                       </div>
 
@@ -1994,8 +1743,8 @@ export default function App() {
                       "Hay 2 sucursales, 4 intermediarios y 14 clientes base.",
                       "El host asigna rol a cada jugador que entra.",
                       "Si el rol es cliente, se le asigna una ficha específica.",
-                      "Si el rol es intermediario, se le asigna un perfil fijo con idoneidad.",
-                      "El primero que selecciona el cliente y sí tiene idoneidad, se lo queda.",
+                      "Todos los intermediarios ven el mismo cliente al tiempo.",
+                      "El primero que lo selecciona lo bloquea para los demás.",
                     ].map((rule, idx) => (
                       <div
                         key={idx}
@@ -2088,8 +1837,8 @@ export default function App() {
                       "Hay 2 sucursales, 4 intermediarios y 14 clientes base.",
                       "El host asigna rol a cada jugador que entra.",
                       "Todos los intermediarios ven el mismo cliente al tiempo.",
-                      "El primero que lo selecciona y tiene idoneidad lo bloquea.",
-                      "La sucursal recibe alertas si un intermediario no tiene idoneidad.",
+                      "El primero que lo selecciona lo bloquea para los demás.",
+                      "La sucursal del intermediario se actualiza en vivo.",
                     ].map((rule, idx) => (
                       <div key={idx} className="flex gap-3 rounded-3xl border p-4" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
                         <div
