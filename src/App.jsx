@@ -534,6 +534,132 @@ function BranchBoard({ branch, movements, alerts = [] }) {
   );
 }
 
+function JoinPage({ onCreateHost, onJoinPlayer, busy }) {
+  const [mode, setMode] = useState("player");
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    setError("");
+    try {
+      if (!name.trim()) {
+        setError("Escribe tu nombre.");
+        return;
+      }
+      if (mode === "player" && !code.trim()) {
+        setError("Escribe el código.");
+        return;
+      }
+
+      if (mode === "host") {
+        await onCreateHost(name.trim());
+      } else {
+        await onJoinPlayer(name.trim(), code.trim().toUpperCase());
+      }
+    } catch (e) {
+      setError(e.message || "No fue posible entrar.");
+    }
+  };
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+      <div
+        className="rounded-[28px] p-8 text-white shadow-md border"
+        style={{
+          background: `linear-gradient(135deg, ${COLORS.blueDark}, ${COLORS.blue})`,
+          borderColor: COLORS.blue,
+        }}
+      >
+        <BadgePill style={{ backgroundColor: "rgba(255,255,255,0.14)", color: COLORS.white }}>
+          MVP multiusuario
+        </BadgePill>
+        <h2 className="mt-4 text-4xl font-semibold leading-tight">
+          Cada jugador entra desde su propio dispositivo y el host controla la partida en vivo.
+        </h2>
+        <p className="mt-4 max-w-2xl text-sm text-slate-100">
+          Esta versión ya separa host, sucursal, intermediario, cliente y observador.
+        </p>
+      </div>
+
+      <CardBox className="p-6">
+        <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Entrar</h3>
+        <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
+          Elige si vas a entrar como host o como jugador.
+        </p>
+
+        <div className="mt-4 flex gap-2">
+          <PanelButton active={mode === "player"} icon={Users} onClick={() => setMode("player")}>
+            Jugador
+          </PanelButton>
+          <PanelButton active={mode === "host"} icon={Gauge} onClick={() => setMode("host")}>
+            Host
+          </PanelButton>
+        </div>
+
+        <div className="mt-5 space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium" style={{ color: COLORS.blue }}>
+              Nombre
+            </label>
+            <input
+              className="w-full rounded-2xl border px-4 py-3 text-sm outline-none"
+              style={{ borderColor: COLORS.border }}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Tu nombre"
+            />
+          </div>
+
+          {mode === "player" && (
+            <div>
+              <label className="mb-1 block text-sm font-medium" style={{ color: COLORS.blue }}>
+                Código de partida
+              </label>
+              <input
+                className="w-full rounded-2xl border px-4 py-3 text-sm uppercase outline-none"
+                style={{ borderColor: COLORS.border }}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="ABCDE"
+              />
+            </div>
+          )}
+
+          {error && (
+            <div className="rounded-2xl p-3 text-sm" style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>
+              {error}
+            </div>
+          )}
+
+          <ActionButton onClick={handleSubmit} disabled={busy} variant="orange" className="w-full">
+            {busy ? "Procesando..." : mode === "host" ? "Crear partida" : "Entrar a la partida"}
+          </ActionButton>
+        </div>
+      </CardBox>
+    </div>
+  );
+}
+
+function WaitingPage({ player }) {
+  return (
+    <CardBox className="p-8 text-center">
+      <div
+        className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-white"
+        style={{ backgroundColor: COLORS.orange }}
+      >
+        <Users className="h-6 w-6" />
+      </div>
+      <h3 className="mt-4 text-2xl font-semibold" style={{ color: COLORS.blue }}>
+        Hola, {player?.name}
+      </h3>
+      <p className="mt-2" style={{ color: COLORS.textSoft }}>
+        Entraste correctamente. Espera a que el host te asigne un rol.
+      </p>
+    </CardBox>
+  );
+}
+
 function IntermediaryProfileCard({ profile }) {
   if (!profile) {
     return (
