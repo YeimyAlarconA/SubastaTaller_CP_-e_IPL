@@ -20,8 +20,6 @@ import {
   TrendingDown,
   CircleDollarSign,
   ChevronRight,
-  Eye,
-  EyeOff,
   Copy,
   LogOut,
   UserRound,
@@ -29,6 +27,7 @@ import {
   ShieldCheck,
   Clock3,
   TriangleAlert,
+  Check,
 } from "lucide-react";
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
 import {
@@ -181,9 +180,7 @@ function roleLabel(role, branchId = "") {
   if (role === "sucursal") {
     return branchId === "bogota" ? "Sucursal Bogotá" : "Sucursal Medellín";
   }
-  if (role === "intermediary") {
-    return "Intermediario";
-  }
+  if (role === "intermediary") return "Intermediario";
   return role;
 }
 
@@ -537,128 +534,6 @@ function BranchBoard({ branch, movements, alerts = [] }) {
   );
 }
 
-function JoinPage({ onCreateHost, onJoinPlayer, busy }) {
-  const [mode, setMode] = useState("player");
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [error, setError] = useState("");
-
-  const handleSubmit = async () => {
-    setError("");
-    try {
-      if (!name.trim()) {
-        setError("Escribe tu nombre.");
-        return;
-      }
-      if (mode === "player" && !code.trim()) {
-        setError("Escribe el código.");
-        return;
-      }
-
-      if (mode === "host") {
-        await onCreateHost(name.trim());
-      } else {
-        await onJoinPlayer(name.trim(), code.trim().toUpperCase());
-      }
-    } catch (e) {
-      setError(e.message || "No fue posible entrar.");
-    }
-  };
-
-  return (
-    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-      <div
-        className="rounded-[28px] p-8 text-white shadow-md border"
-        style={{
-          background: `linear-gradient(135deg, ${COLORS.blueDark}, ${COLORS.blue})`,
-          borderColor: COLORS.blue,
-        }}
-      >
-        <BadgePill style={{ backgroundColor: "rgba(255,255,255,0.14)", color: COLORS.white }}>
-          MVP multiusuario
-        </BadgePill>
-        <h2 className="mt-4 text-4xl font-semibold leading-tight">
-          Cada jugador entra desde su propio dispositivo y el host controla la partida en vivo.
-        </h2>
-        <p className="mt-4 max-w-2xl text-sm text-slate-100">
-          Esta versión ya separa host, sucursal, intermediario, cliente y observador. El primero que selecciona el cliente lo bloquea para los demás.
-        </p>
-      </div>
-
-      <CardBox className="p-6">
-        <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>Entrar</h3>
-        <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
-          Elige si vas a entrar como host o como jugador.
-        </p>
-
-        <div className="mt-4 flex gap-2">
-          <PanelButton active={mode === "player"} icon={Users} onClick={() => setMode("player")}>
-            Jugador
-          </PanelButton>
-          <PanelButton active={mode === "host"} icon={Gauge} onClick={() => setMode("host")}>
-            Host
-          </PanelButton>
-        </div>
-
-        <div className="mt-5 space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium" style={{ color: COLORS.blue }}>Nombre</label>
-            <input
-              className="w-full rounded-2xl border px-4 py-3 text-sm outline-none"
-              style={{ borderColor: COLORS.border }}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Tu nombre"
-            />
-          </div>
-
-          {mode === "player" && (
-            <div>
-              <label className="mb-1 block text-sm font-medium" style={{ color: COLORS.blue }}>Código de partida</label>
-              <input
-                className="w-full rounded-2xl border px-4 py-3 text-sm uppercase outline-none"
-                style={{ borderColor: COLORS.border }}
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="ABCDE"
-              />
-            </div>
-          )}
-
-          {error && (
-            <div className="rounded-2xl p-3 text-sm" style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>
-              {error}
-            </div>
-          )}
-
-          <ActionButton onClick={handleSubmit} disabled={busy} variant="orange" className="w-full">
-            {busy ? "Procesando..." : mode === "host" ? "Crear partida" : "Entrar a la partida"}
-          </ActionButton>
-        </div>
-      </CardBox>
-    </div>
-  );
-}
-
-function WaitingPage({ player }) {
-  return (
-    <CardBox className="p-8 text-center">
-      <div
-        className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-white"
-        style={{ backgroundColor: COLORS.orange }}
-      >
-        <Users className="h-6 w-6" />
-      </div>
-      <h3 className="mt-4 text-2xl font-semibold" style={{ color: COLORS.blue }}>
-        Hola, {player?.name}
-      </h3>
-      <p className="mt-2" style={{ color: COLORS.textSoft }}>
-        Entraste correctamente. Espera a que el host te asigne un rol.
-      </p>
-    </CardBox>
-  );
-}
-
 function IntermediaryProfileCard({ profile }) {
   if (!profile) {
     return (
@@ -719,10 +594,7 @@ function IntermediaryProfileCard({ profile }) {
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               {profile.idoneidad.map((line) => (
-                <BadgePill
-                  key={line}
-                  style={{ backgroundColor: "#E7F0FF", color: COLORS.blueDark }}
-                >
+                <BadgePill key={line} style={{ backgroundColor: "#E7F0FF", color: COLORS.blueDark }}>
                   {line}
                 </BadgePill>
               ))}
@@ -744,9 +616,30 @@ function IntermediaryProfileCard({ profile }) {
   );
 }
 
-function AssignedClientPanel({ assignedClient, session }) {
+function ClientDataBlock({ client }) {
+  if (!client) return null;
+
+  return (
+    <div className="mt-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatCard label="Línea" value={client.line} />
+        <StatCard label="Prima" value={formatMoney(client.premium)} accent={COLORS.blue} />
+        <StatCard label="Siniestro" value={formatMoney(client.claims)} accent="#B45309" />
+        <StatCard label="Comisión" value={formatMoney(client.commission)} accent={COLORS.orange} />
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <BadgePill className={`border ${riskClasses(client.risk)}`}>{client.risk}</BadgePill>
+        <BadgePill style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>{client.tag}</BadgePill>
+      </div>
+    </div>
+  );
+}
+
+function AssignedClientPanel({ assignedClient, session, player, onChooseApplicant }) {
   const currentClient = session?.currentClient || null;
   const isCurrent = currentClient?.id === assignedClient?.id;
+  const applicants = isCurrent ? currentClient?.applicants || [] : [];
   const status = isCurrent ? currentClient?.status || "activo" : "pendiente";
 
   if (!assignedClient) {
@@ -826,18 +719,56 @@ function AssignedClientPanel({ assignedClient, session }) {
             {assignedClient.context || "Sin contexto registrado"}
           </p>
         </div>
+
+        <ClientDataBlock client={assignedClient} />
+
+        {isCurrent && applicants.length > 0 && currentClient?.status === "active" && (
+          <div className="mt-6 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
+            <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
+              Intermediarios que aplicaron por ti
+            </div>
+            <div className="mt-4 space-y-3">
+              {applicants.map((app) => (
+                <div
+                  key={app.playerId}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4"
+                  style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
+                >
+                  <div>
+                    <div className="font-semibold" style={{ color: COLORS.blueDark }}>
+                      {app.playerName}
+                    </div>
+                    <div className="text-sm" style={{ color: COLORS.textSoft }}>
+                      {app.branchName}
+                    </div>
+                  </div>
+
+                  <ActionButton
+                    onClick={() => onChooseApplicant(app)}
+                    variant="orange"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Check className="h-4 w-4" />
+                      Elegir intermediario
+                    </span>
+                  </ActionButton>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isCurrent && applicants.length === 0 && currentClient?.status === "active" && (
+          <div className="mt-6 rounded-2xl p-4 text-sm" style={{ backgroundColor: "#FFF7F1", color: COLORS.orange }}>
+            Todavía no hay intermediarios aplicando por este cliente.
+          </div>
+        )}
       </div>
     </CardBox>
   );
 }
 
 function FacilitatorClientCard({ currentClient }) {
-  const [revealed, setRevealed] = useState(false);
-
-  useEffect(() => {
-    setRevealed(false);
-  }, [currentClient?.id]);
-
   if (!currentClient) {
     return (
       <CardBox className="p-8 text-center text-sm" style={{ color: COLORS.textSoft }}>
@@ -891,58 +822,39 @@ function FacilitatorClientCard({ currentClient }) {
               </p>
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-3">
-              {!revealed ? (
-                <ActionButton onClick={() => setRevealed(true)} variant="orange">
-                  <span className="inline-flex items-center gap-2">
-                    <Eye className="h-4 w-4" />
-                    Revelar detalles
-                  </span>
-                </ActionButton>
-              ) : (
-                <ActionButton onClick={() => setRevealed(false)} variant="secondary">
-                  <span className="inline-flex items-center gap-2">
-                    <EyeOff className="h-4 w-4" />
-                    Ocultar detalles
-                  </span>
-                </ActionButton>
-              )}
-            </div>
+            <ClientDataBlock client={currentClient} />
+
+            {currentClient?.applicants?.length > 0 && currentClient.status === "active" && (
+              <div className="mt-5 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
+                <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
+                  Intermediarios aplicando
+                </div>
+                <div className="mt-3 space-y-2">
+                  {currentClient.applicants.map((app) => (
+                    <div
+                      key={app.playerId}
+                      className="rounded-2xl border p-3"
+                      style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
+                    >
+                      <div className="font-semibold" style={{ color: COLORS.blueDark }}>{app.playerName}</div>
+                      <div className="text-sm" style={{ color: COLORS.textSoft }}>{app.branchName}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {currentClient.takenBy && (
+              <div
+                className="mt-5 rounded-2xl p-4 text-sm"
+                style={{ backgroundColor: "#E8F6EE", color: "#047857" }}
+              >
+                Elegido: <span className="font-semibold">{currentClient.takenBy.playerName}</span> ·{" "}
+                {currentClient.takenBy.branchName}
+              </div>
+            )}
           </div>
         </div>
-
-        <AnimatePresence>
-          {revealed && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="mt-5"
-            >
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                <StatCard label="Línea" value={currentClient.line} />
-                <StatCard label="Prima" value={formatMoney(currentClient.premium)} accent={COLORS.blue} />
-                <StatCard label="Siniestro" value={formatMoney(currentClient.claims)} accent="#B45309" />
-                <StatCard label="Comisión" value={formatMoney(currentClient.commission)} accent={COLORS.orange} />
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <BadgePill className={`border ${riskClasses(currentClient.risk)}`}>{currentClient.risk}</BadgePill>
-                <BadgePill style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>{currentClient.tag}</BadgePill>
-              </div>
-
-              {currentClient.takenBy && (
-                <div
-                  className="mt-4 rounded-2xl p-4 text-sm"
-                  style={{ backgroundColor: "#E8F6EE", color: "#047857" }}
-                >
-                  Tomado por <span className="font-semibold">{currentClient.takenBy.playerName}</span> ·{" "}
-                  {currentClient.takenBy.branchName}
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </CardBox>
   );
@@ -1105,7 +1017,6 @@ function GameSetupPage({
 
 function FacilitatorPage({ session, onPublishNextClient, onGoFinal }) {
   const currentClient = session?.currentClient || null;
-  const history = session?.history || [];
   const branches = session?.branches || {};
   const alerts = session?.alerts || [];
 
@@ -1152,15 +1063,15 @@ function FacilitatorPage({ session, onPublishNextClient, onGoFinal }) {
         </CardBox>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="space-y-6">
         <BranchBoard
           branch={branches.bogota}
-          movements={history.filter((m) => m.branchId === "bogota")}
+          movements={(session?.history || []).filter((m) => m.branchId === "bogota")}
           alerts={alerts.filter((a) => a.branchId === "bogota")}
         />
         <BranchBoard
           branch={branches.medellin}
-          movements={history.filter((m) => m.branchId === "medellin")}
+          movements={(session?.history || []).filter((m) => m.branchId === "medellin")}
           alerts={alerts.filter((a) => a.branchId === "medellin")}
         />
       </div>
@@ -1185,22 +1096,12 @@ function SucursalPage({ player, session }) {
   );
 }
 
-function IntermediaryPage({ player, session, onSelectClient }) {
+function IntermediaryPage({ player, session, onApplyClient }) {
   const currentClient = session?.currentClient || null;
-  const [revealed, setRevealed] = useState(false);
   const profile = getProfileById(player?.assignedIntermediaryId || "");
   const alerts = session?.alerts || [];
   const myLatestAlert = alerts.find((a) => a.playerId === player.id);
-
-  useEffect(() => {
-    setRevealed(false);
-  }, [currentClient?.id]);
-
-  const takenByOther =
-    currentClient?.takenBy && currentClient.takenBy.playerId !== player.id;
-
-  const takenByMe =
-    currentClient?.takenBy && currentClient.takenBy.playerId === player.id;
+  const alreadyApplied = currentClient?.applicants?.some((a) => a.playerId === player.id);
 
   return (
     <div className="space-y-6">
@@ -1252,75 +1153,38 @@ function IntermediaryPage({ player, session, onSelectClient }) {
                 <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>{currentClient.context}</p>
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                {!revealed ? (
-                  <ActionButton onClick={() => setRevealed(true)} variant="primary">
-                    <span className="inline-flex items-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      Revelar detalles
-                    </span>
-                  </ActionButton>
-                ) : (
-                  <ActionButton onClick={() => setRevealed(false)} variant="secondary">
-                    <span className="inline-flex items-center gap-2">
-                      <EyeOff className="h-4 w-4" />
-                      Ocultar detalles
-                    </span>
-                  </ActionButton>
-                )}
+              <ClientDataBlock client={currentClient} />
 
+              <div className="mt-5 flex flex-wrap gap-3">
                 <ActionButton
-                  onClick={onSelectClient}
-                  disabled={!revealed || currentClient.status !== "active" || !profile}
+                  onClick={onApplyClient}
+                  disabled={currentClient.status !== "active" || !profile || alreadyApplied}
                   variant="orange"
                 >
-                  Seleccionar cliente
+                  Aplicar
                 </ActionButton>
               </div>
 
-              {takenByOther && (
-                <div className="mt-4 rounded-2xl p-3 text-sm" style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>
-                  Este cliente ya fue tomado por {currentClient.takenBy.playerName}.
+              {alreadyApplied && currentClient.status === "active" && (
+                <div className="mt-4 rounded-2xl p-3 text-sm" style={{ backgroundColor: "#E7F0FF", color: COLORS.blueDark }}>
+                  Ya aplicaste por este cliente.
                 </div>
               )}
 
-              {takenByMe && (
+              {currentClient.takenBy && currentClient.takenBy.playerId === player.id && (
                 <div className="mt-4 rounded-2xl p-3 text-sm" style={{ backgroundColor: "#E8F6EE", color: "#047857" }}>
-                  Tú tomaste este cliente para {currentClient.takenBy.branchName}.
+                  El cliente te eligió a ti para continuar el proceso.
                 </div>
               )}
             </div>
           </div>
-
-          <AnimatePresence>
-            {revealed && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="mt-5"
-              >
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  <StatCard label="Línea" value={currentClient.line} />
-                  <StatCard label="Prima" value={formatMoney(currentClient.premium)} />
-                  <StatCard label="Siniestro" value={formatMoney(currentClient.claims)} />
-                  <StatCard label="Comisión" value={formatMoney(currentClient.commission)} />
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <BadgePill className={`border ${riskClasses(currentClient.risk)}`}>{currentClient.risk}</BadgePill>
-                  <BadgePill style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>{currentClient.tag}</BadgePill>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </CardBox>
       )}
     </div>
   );
 }
 
-function ClientePage({ player, session }) {
+function ClientePage({ player, session, onChooseApplicant }) {
   const assignedClientId = player?.assignedClientId ? String(player.assignedClientId) : "";
   const assignedClient = assignedClientId
     ? seedClients.find((c) => String(c.id) === assignedClientId)
@@ -1333,7 +1197,12 @@ function ClientePage({ player, session }) {
         subtitle={`${player?.name || "Jugador"} · Aquí interpretas el cliente asignado.`}
         icon={Briefcase}
       />
-      <AssignedClientPanel assignedClient={assignedClient} session={session} />
+      <AssignedClientPanel
+        assignedClient={assignedClient}
+        session={session}
+        player={player}
+        onChooseApplicant={onChooseApplicant}
+      />
     </div>
   );
 }
@@ -1352,7 +1221,7 @@ function ObservadorPage({ session }) {
 
       <FacilitatorClientCard currentClient={currentClient} />
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+      <div className="space-y-6">
         <BranchBoard
           branch={branches.bogota}
           movements={(session?.history || []).filter((m) => m.branchId === "bogota")}
@@ -1654,6 +1523,7 @@ export default function App() {
             status: "active",
             publishedAtMs: Date.now(),
             takenBy: null,
+            applicants: [],
           },
           remainingClients: remaining,
           status: "live",
@@ -1664,7 +1534,7 @@ export default function App() {
     }
   };
 
-  const selectCurrentClient = async () => {
+  const applyToClient = async () => {
     if (!sessionId || !playerDoc || playerDoc.role !== "intermediary") return;
 
     const ref = doc(db, "sessions", sessionId);
@@ -1676,7 +1546,7 @@ export default function App() {
 
         const data = snap.data();
         const current = data.currentClient;
-        if (!current || current.status !== "active" || current.takenBy) {
+        if (!current || current.status !== "active") {
           throw new Error("Este cliente ya no está disponible.");
         }
 
@@ -1709,9 +1579,62 @@ export default function App() {
           return;
         }
 
+        const applicants = [...(current.applicants || [])];
+        const alreadyApplied = applicants.some((a) => a.playerId === playerDoc.id);
+
+        if (alreadyApplied) return;
+
+        applicants.push({
+          playerId: playerDoc.id,
+          playerName: profile.displayName,
+          branchId: profile.branchId,
+          branchName: profile.branchId === "bogota" ? "Sucursal Bogotá" : "Sucursal Medellín",
+          profileId: profile.id,
+        });
+
+        tx.update(ref, {
+          currentClient: {
+            ...current,
+            applicants,
+          },
+        });
+      });
+    } catch (e) {
+      alert(e.message || "No fue posible aplicar por el cliente.");
+    }
+  };
+
+  const chooseApplicant = async (applicant) => {
+    if (!sessionId || !playerDoc || playerDoc.role !== "cliente") return;
+
+    const ref = doc(db, "sessions", sessionId);
+
+    try {
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists()) throw new Error("La partida ya no existe.");
+
+        const data = snap.data();
+        const current = data.currentClient;
+        if (!current || current.status !== "active") {
+          throw new Error("Este cliente ya no está disponible.");
+        }
+
+        const playerSnap = await tx.get(doc(db, "sessions", sessionId, "players", playerDoc.id));
+        const playerData = playerSnap.data();
+
+        if (String(playerData?.assignedClientId || "") !== String(current.id)) {
+          throw new Error("Este no es tu cliente asignado.");
+        }
+
+        const selectedApplicant = (current.applicants || []).find((a) => a.playerId === applicant.playerId);
+        if (!selectedApplicant) {
+          throw new Error("Ese intermediario ya no está disponible.");
+        }
+
         const branches = JSON.parse(JSON.stringify(data.branches || makeBranches()));
-        const target = branches[profile.branchId];
-        if (!target) throw new Error("El intermediario no tiene sucursal asignada.");
+        const target = branches[selectedApplicant.branchId];
+        if (!target) throw new Error("La sucursal del intermediario no existe.");
 
         target.primas = round2(target.primas + current.premium);
         target.siniestros = round2(target.siniestros + current.claims);
@@ -1722,9 +1645,9 @@ export default function App() {
           createdAtMs: Date.now(),
           clientId: current.id,
           clientName: current.name,
-          playerId: playerDoc.id,
-          playerName: profile.displayName,
-          branchId: profile.branchId,
+          playerId: selectedApplicant.playerId,
+          playerName: selectedApplicant.playerName,
+          branchId: selectedApplicant.branchId,
           branchName: target.name,
           premium: current.premium,
           claims: current.claims,
@@ -1738,9 +1661,9 @@ export default function App() {
             status: "taken",
             selectedAtMs: Date.now(),
             takenBy: {
-              playerId: playerDoc.id,
-              playerName: profile.displayName,
-              branchId: profile.branchId,
+              playerId: selectedApplicant.playerId,
+              playerName: selectedApplicant.playerName,
+              branchId: selectedApplicant.branchId,
               branchName: target.name,
             },
           },
@@ -1748,7 +1671,7 @@ export default function App() {
         });
       });
     } catch (e) {
-      alert(e.message || "No fue posible tomar el cliente.");
+      alert(e.message || "No fue posible elegir al intermediario.");
     }
   };
 
@@ -1908,7 +1831,7 @@ export default function App() {
                           Cliente
                         </div>
                         <p className="text-sm" style={{ color: COLORS.textSoft }}>
-                          Tiene una ficha propia para interpretar el caso asignado.
+                          Ve su ficha completa y puede elegir entre intermediarios que aplicaron.
                         </p>
                       </div>
                     </div>
@@ -1946,7 +1869,7 @@ export default function App() {
                       "El host asigna rol a cada jugador que entra.",
                       "Si el rol es cliente, se le asigna una ficha específica.",
                       "Si el rol es intermediario, se le asigna un perfil fijo con idoneidad.",
-                      "El primero que selecciona el cliente y tiene idoneidad, se lo queda.",
+                      "Los intermediarios aplican y el cliente elige con quién se queda.",
                     ].map((rule, idx) => (
                       <div
                         key={idx}
@@ -1997,10 +1920,10 @@ export default function App() {
                       MVP tiempo real
                     </BadgePill>
                     <h2 className="mt-4 max-w-2xl text-4xl font-semibold leading-tight">
-                      Esta base ya soporta host, jugadores conectados y bloqueo del primer intermediario que selecciona.
+                      Esta base ya soporta host, jugadores conectados y lógica de aplicación por cliente.
                     </h2>
                     <p className="mt-4 max-w-2xl text-sm text-slate-100">
-                      El host asigna roles, publica clientes y el tablero se mueve en vivo cuando un intermediario gana el cliente.
+                      El host asigna roles, publica clientes, los intermediarios aplican y el cliente elige con quién continuar.
                     </p>
                     <div className="mt-6 flex flex-wrap gap-3">
                       <ActionButton onClick={() => setScreen("juego")} variant="orange">
@@ -2039,8 +1962,8 @@ export default function App() {
                       "Hay 2 sucursales, 4 intermediarios y 14 clientes base.",
                       "El host asigna rol a cada jugador que entra.",
                       "Todos los intermediarios ven el mismo cliente al tiempo.",
-                      "El primero que lo selecciona y tiene idoneidad lo bloquea.",
-                      "La sucursal recibe alertas si un intermediario no tiene idoneidad.",
+                      "Los intermediarios aplican si tienen idoneidad.",
+                      "El cliente ve quién aplicó y elige con cuál se va.",
                     ].map((rule, idx) => (
                       <div
                         key={idx}
@@ -2085,9 +2008,9 @@ export default function App() {
                 ) : playerDoc.role === "sucursal" ? (
                   <SucursalPage player={playerDoc} session={session} />
                 ) : playerDoc.role === "intermediary" ? (
-                  <IntermediaryPage player={playerDoc} session={session} onSelectClient={selectCurrentClient} />
+                  <IntermediaryPage player={playerDoc} session={session} onApplyClient={applyToClient} />
                 ) : playerDoc.role === "cliente" ? (
-                  <ClientePage player={playerDoc} session={session} />
+                  <ClientePage player={playerDoc} session={session} onChooseApplicant={chooseApplicant} />
                 ) : (
                   <ObservadorPage session={session} />
                 )}
@@ -2101,7 +2024,11 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
               >
-                <FacilitatorPage session={session} onPublishNextClient={publishNextClient} onGoFinal={() => setScreen("final")} />
+                <FacilitatorPage
+                  session={session}
+                  onPublishNextClient={publishNextClient}
+                  onGoFinal={goFinal}
+                />
               </motion.div>
             )}
 
