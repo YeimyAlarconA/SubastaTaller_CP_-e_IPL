@@ -28,6 +28,8 @@ import {
   Clock3,
   TriangleAlert,
   Check,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
 import {
@@ -381,6 +383,26 @@ function ClientTypeBadge({ type }) {
   );
 }
 
+function ClientDataBlock({ client }) {
+  if (!client) return null;
+
+  return (
+    <div className="mt-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatCard label="Línea" value={client.line} />
+        <StatCard label="Prima" value={formatMoney(client.premium)} accent={COLORS.blue} />
+        <StatCard label="Siniestro" value={formatMoney(client.claims)} accent="#B45309" />
+        <StatCard label="Comisión" value={formatMoney(client.commission)} accent={COLORS.orange} />
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <BadgePill className={`border ${riskClasses(client.risk)}`}>{client.risk}</BadgePill>
+        <BadgePill style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>{client.tag}</BadgePill>
+      </div>
+    </div>
+  );
+}
+
 function BranchBoard({ branch, movements, alerts = [] }) {
   if (!branch) return null;
 
@@ -431,7 +453,7 @@ function BranchBoard({ branch, movements, alerts = [] }) {
         <StatCard label="Siniestros" value={formatMoney(branch.siniestros)} accent="#B45309" />
         <StatCard label="Comisiones" value={formatMoney(branch.comisiones)} accent={COLORS.orange} />
         <StatCard label="Gasto meta" value={formatMoney(branch.gastoMeta)} accent={COLORS.blueDark} />
-        <StatCard label="Gasto pendiente" value={formatMoney(getGastoPendiente(branch))} accent={gastoPendiente > 0 ? COLORS.blueDark : "#059669"} />
+        <StatCard label="Gasto pendiente" value={formatMoney(gastoPendiente)} accent={gastoPendiente > 0 ? COLORS.blueDark : "#059669"} />
         <StatCard label="Utilidad" value={formatMoney(utilidad)} accent={utilidad >= 0 ? "#059669" : "#DC2626"} />
       </div>
 
@@ -742,26 +764,6 @@ function IntermediaryProfileCard({ profile }) {
   );
 }
 
-function ClientDataBlock({ client }) {
-  if (!client) return null;
-
-  return (
-    <div className="mt-5">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Línea" value={client.line} />
-        <StatCard label="Prima" value={formatMoney(client.premium)} accent={COLORS.blue} />
-        <StatCard label="Siniestro" value={formatMoney(client.claims)} accent="#B45309" />
-        <StatCard label="Comisión" value={formatMoney(client.commission)} accent={COLORS.orange} />
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <BadgePill className={`border ${riskClasses(client.risk)}`}>{client.risk}</BadgePill>
-        <BadgePill style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>{client.tag}</BadgePill>
-      </div>
-    </div>
-  );
-}
-
 function AssignedClientPanel({ assignedClient, session, player, onChooseApplicant }) {
   const currentClient = session?.currentClient || null;
   const isCurrent = currentClient?.id === assignedClient?.id;
@@ -848,7 +850,7 @@ function AssignedClientPanel({ assignedClient, session, player, onChooseApplican
 
         <ClientDataBlock client={assignedClient} />
 
-        {isCurrent && applicants.length > 0 && currentClient?.status === "active" && (
+        {isCurrent && applicants.length >= 2 && currentClient?.status === "active" && (
           <div className="mt-6 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
             <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
               Intermediarios que aplicaron por ti
@@ -884,6 +886,12 @@ function AssignedClientPanel({ assignedClient, session, player, onChooseApplican
           </div>
         )}
 
+        {isCurrent && applicants.length === 1 && currentClient?.status === "active" && (
+          <div className="mt-6 rounded-2xl p-4 text-sm" style={{ backgroundColor: "#E7F0FF", color: COLORS.blueDark }}>
+            Ya tienes un intermediario aplicando por ti: <span className="font-semibold">{applicants[0].playerName}</span>.
+          </div>
+        )}
+
         {isCurrent && applicants.length === 0 && currentClient?.status === "active" && (
           <div className="mt-6 rounded-2xl p-4 text-sm" style={{ backgroundColor: "#FFF7F1", color: COLORS.orange }}>
             Todavía no hay intermediarios aplicando por este cliente.
@@ -895,6 +903,12 @@ function AssignedClientPanel({ assignedClient, session, player, onChooseApplican
 }
 
 function FacilitatorClientCard({ currentClient }) {
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    setRevealed(false);
+  }, [currentClient?.id]);
+
   if (!currentClient) {
     return (
       <CardBox className="p-8 text-center text-sm" style={{ color: COLORS.textSoft }}>
@@ -948,7 +962,35 @@ function FacilitatorClientCard({ currentClient }) {
               </p>
             </div>
 
-            <ClientDataBlock client={currentClient} />
+            <div className="mt-5 flex flex-wrap gap-3">
+              {!revealed ? (
+                <ActionButton onClick={() => setRevealed(true)} variant="orange">
+                  <span className="inline-flex items-center gap-2">
+                    <Eye className="h-4 w-4" />
+                    Revelar detalles
+                  </span>
+                </ActionButton>
+              ) : (
+                <ActionButton onClick={() => setRevealed(false)} variant="secondary">
+                  <span className="inline-flex items-center gap-2">
+                    <EyeOff className="h-4 w-4" />
+                    Ocultar detalles
+                  </span>
+                </ActionButton>
+              )}
+            </div>
+
+            <AnimatePresence>
+              {revealed && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                >
+                  <ClientDataBlock client={currentClient} />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {currentClient?.applicants?.length > 0 && currentClient.status === "active" && (
               <div className="mt-5 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
@@ -1827,6 +1869,8 @@ export default function App() {
     );
   }
 
+  const showFacilitatorTab = isHost && !!sessionId;
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: COLORS.bg, color: COLORS.blueDark }}>
       <div className="mx-auto max-w-7xl p-6">
@@ -1857,9 +1901,13 @@ export default function App() {
             <PanelButton active={screen === "juego"} icon={PlayCircle} onClick={() => setScreen("juego")}>
               Juego
             </PanelButton>
-            <PanelButton active={screen === "facilitador"} icon={Gauge} onClick={() => setScreen("facilitador")}>
-              Facilitador
-            </PanelButton>
+
+            {showFacilitatorTab && (
+              <PanelButton active={screen === "facilitador"} icon={Gauge} onClick={() => setScreen("facilitador")}>
+                Facilitador
+              </PanelButton>
+            )}
+
             <PanelButton active={screen === "final"} icon={Trophy} onClick={() => setScreen("final")}>
               Ranking final
             </PanelButton>
@@ -2143,7 +2191,7 @@ export default function App() {
               </motion.div>
             )}
 
-            {screen === "facilitador" && (
+            {showFacilitatorTab && screen === "facilitador" && (
               <motion.div
                 key="facilitador"
                 initial={{ opacity: 0, y: 8 }}
