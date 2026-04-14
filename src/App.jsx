@@ -30,6 +30,7 @@ import {
   Check,
   Eye,
   EyeOff,
+  Lock,
 } from "lucide-react";
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
 import {
@@ -49,6 +50,7 @@ import { seedClients } from "./seedClients";
 
 const GASTO_META = 500;
 const STORAGE_KEY = "subasta_mvp_session";
+const HOST_PASSWORD = "1017";
 
 const COLORS = {
   orange: "#EE7623",
@@ -136,12 +138,12 @@ function getCobertura(branch) {
 
 function getSemaforo(cobertura) {
   if (cobertura >= 100) {
-    return { label: "Verde", dot: "bg-emerald-500", text: "text-emerald-700" };
+    return { label: "Verde", dot: "bg-emerald-500" };
   }
   if (cobertura >= 60) {
-    return { label: "Amarillo", dot: "bg-amber-400", text: "text-amber-700" };
+    return { label: "Amarillo", dot: "bg-amber-400" };
   }
-  return { label: "Rojo", dot: "bg-rose-500", text: "text-rose-700" };
+  return { label: "Rojo", dot: "bg-rose-500" };
 }
 
 function riskClasses(risk) {
@@ -268,10 +270,7 @@ function ActionButton({ children, onClick, disabled = false, variant = "primary"
       onClick={onClick}
       disabled={disabled}
       className={`rounded-2xl border px-4 py-2.5 text-sm font-medium transition ${className}`}
-      style={{
-        ...styles,
-        cursor: disabled ? "not-allowed" : "pointer",
-      }}
+      style={{ ...styles, cursor: disabled ? "not-allowed" : "pointer" }}
     >
       {children}
     </button>
@@ -560,6 +559,7 @@ function JoinPage({ onCreateHost, onJoinPlayer, busy }) {
   const [mode, setMode] = useState("player");
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async () => {
@@ -569,16 +569,22 @@ function JoinPage({ onCreateHost, onJoinPlayer, busy }) {
         setError("Escribe tu nombre.");
         return;
       }
-      if (mode === "player" && !code.trim()) {
+
+      if (mode === "host") {
+        if (password !== HOST_PASSWORD) {
+          setError("Contraseña de host incorrecta.");
+          return;
+        }
+        await onCreateHost(name.trim());
+        return;
+      }
+
+      if (!code.trim()) {
         setError("Escribe el código.");
         return;
       }
 
-      if (mode === "host") {
-        await onCreateHost(name.trim());
-      } else {
-        await onJoinPlayer(name.trim(), code.trim().toUpperCase());
-      }
+      await onJoinPlayer(name.trim(), code.trim().toUpperCase());
     } catch (e) {
       setError(e.message || "No fue posible entrar.");
     }
@@ -645,6 +651,25 @@ function JoinPage({ onCreateHost, onJoinPlayer, busy }) {
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="ABCDE"
               />
+            </div>
+          )}
+
+          {mode === "host" && (
+            <div>
+              <label className="mb-1 block text-sm font-medium" style={{ color: COLORS.blue }}>
+                Contraseña host
+              </label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: COLORS.textSoft }} />
+                <input
+                  type="password"
+                  className="w-full rounded-2xl border py-3 pl-10 pr-4 text-sm outline-none"
+                  style={{ borderColor: COLORS.border }}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Escribe la contraseña"
+                />
+              </div>
             </div>
           )}
 
@@ -764,7 +789,7 @@ function IntermediaryProfileCard({ profile }) {
   );
 }
 
-function AssignedClientPanel({ assignedClient, session, player, onChooseApplicant }) {
+function AssignedClientPanel({ assignedClient, session, onChooseApplicant }) {
   const currentClient = session?.currentClient || null;
   const isCurrent = currentClient?.id === assignedClient?.id;
   const applicants = isCurrent ? currentClient?.applicants || [] : [];
@@ -871,10 +896,7 @@ function AssignedClientPanel({ assignedClient, session, player, onChooseApplican
                     </div>
                   </div>
 
-                  <ActionButton
-                    onClick={() => onChooseApplicant(app)}
-                    variant="orange"
-                  >
+                  <ActionButton onClick={() => onChooseApplicant(app)} variant="orange">
                     <span className="inline-flex items-center gap-2">
                       <Check className="h-4 w-4" />
                       Elegir intermediario
@@ -902,7 +924,7 @@ function AssignedClientPanel({ assignedClient, session, player, onChooseApplican
   );
 }
 
-function FacilitatorClientCard({ currentClient }) {
+function FacilitatorClientCard({ currentClient, onAssignSingleApplicant }) {
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
@@ -918,6 +940,8 @@ function FacilitatorClientCard({ currentClient }) {
   }
 
   const isCompany = currentClient.customerType === "Empresa";
+  const applicants = currentClient?.applicants || [];
+  const singleApplicant = applicants.length === 1 ? applicants[0] : null;
 
   return (
     <CardBox className="p-6">
@@ -992,13 +1016,13 @@ function FacilitatorClientCard({ currentClient }) {
               )}
             </AnimatePresence>
 
-            {currentClient?.applicants?.length > 0 && currentClient.status === "active" && (
+            {applicants.length > 0 && currentClient.status === "active" && (
               <div className="mt-5 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
                 <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
                   Intermediarios aplicando
                 </div>
                 <div className="mt-3 space-y-2">
-                  {currentClient.applicants.map((app) => (
+                  {applicants.map((app) => (
                     <div
                       key={app.playerId}
                       className="rounded-2xl border p-3"
@@ -1009,6 +1033,14 @@ function FacilitatorClientCard({ currentClient }) {
                     </div>
                   ))}
                 </div>
+
+                {singleApplicant && (
+                  <div className="mt-4">
+                    <ActionButton onClick={() => onAssignSingleApplicant(singleApplicant)} variant="orange">
+                      Aplicar cliente
+                    </ActionButton>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1183,7 +1215,7 @@ function GameSetupPage({
   );
 }
 
-function FacilitatorPage({ session, onPublishNextClient, onGoFinal }) {
+function FacilitatorPage({ session, onPublishNextClient, onGoFinal, onAssignSingleApplicant }) {
   const currentClient = session?.currentClient || null;
   const branches = session?.branches || {};
   const alerts = session?.alerts || [];
@@ -1205,7 +1237,10 @@ function FacilitatorPage({ session, onPublishNextClient, onGoFinal }) {
         </ActionButton>
       </div>
 
-      <FacilitatorClientCard currentClient={currentClient} />
+      <FacilitatorClientCard
+        currentClient={currentClient}
+        onAssignSingleApplicant={onAssignSingleApplicant}
+      />
 
       {alerts.length > 0 && (
         <CardBox className="p-6">
@@ -1368,7 +1403,6 @@ function ClientePage({ player, session, onChooseApplicant }) {
       <AssignedClientPanel
         assignedClient={assignedClient}
         session={session}
-        player={player}
         onChooseApplicant={onChooseApplicant}
       />
     </div>
@@ -1387,7 +1421,7 @@ function ObservadorPage({ session }) {
         icon={LayoutDashboard}
       />
 
-      <FacilitatorClientCard currentClient={currentClient} />
+      <FacilitatorClientCard currentClient={currentClient} onAssignSingleApplicant={() => {}} />
 
       <div className="space-y-6">
         <BranchBoard
@@ -1702,6 +1736,70 @@ export default function App() {
     }
   };
 
+  const finalizeAssignment = async (selectedApplicant) => {
+    if (!sessionId) return;
+
+    const ref = doc(db, "sessions", sessionId);
+
+    try {
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists()) throw new Error("La partida ya no existe.");
+
+        const data = snap.data();
+        const current = data.currentClient;
+        if (!current || current.status !== "active") {
+          throw new Error("Este cliente ya no está disponible.");
+        }
+
+        const validApplicant = (current.applicants || []).find((a) => a.playerId === selectedApplicant.playerId);
+        if (!validApplicant) {
+          throw new Error("Ese intermediario ya no está disponible.");
+        }
+
+        const branches = JSON.parse(JSON.stringify(data.branches || makeBranches()));
+        const target = branches[validApplicant.branchId];
+        if (!target) throw new Error("La sucursal del intermediario no existe.");
+
+        target.primas = round2(target.primas + current.premium);
+        target.siniestros = round2(target.siniestros + current.claims);
+        target.comisiones = round2(target.comisiones + current.commission);
+
+        const movement = {
+          id: `m_${Date.now()}`,
+          createdAtMs: Date.now(),
+          clientId: current.id,
+          clientName: current.name,
+          playerId: validApplicant.playerId,
+          playerName: validApplicant.playerName,
+          branchId: validApplicant.branchId,
+          branchName: target.name,
+          premium: current.premium,
+          claims: current.claims,
+          commission: current.commission,
+        };
+
+        tx.update(ref, {
+          branches,
+          currentClient: {
+            ...current,
+            status: "taken",
+            selectedAtMs: Date.now(),
+            takenBy: {
+              playerId: validApplicant.playerId,
+              playerName: validApplicant.playerName,
+              branchId: validApplicant.branchId,
+              branchName: target.name,
+            },
+          },
+          history: [movement, ...(data.history || [])].slice(0, 50),
+        });
+      });
+    } catch (e) {
+      alert(e.message || "No fue posible asignar el cliente.");
+    }
+  };
+
   const applyToClient = async () => {
     if (!sessionId || !playerDoc || playerDoc.role !== "intermediary") return;
 
@@ -1775,72 +1873,18 @@ export default function App() {
   const chooseApplicant = async (applicant) => {
     if (!sessionId || !playerDoc || playerDoc.role !== "cliente") return;
 
-    const ref = doc(db, "sessions", sessionId);
+    const current = session?.currentClient;
+    if (!current) return;
 
-    try {
-      await runTransaction(db, async (tx) => {
-        const snap = await tx.get(ref);
-        if (!snap.exists()) throw new Error("La partida ya no existe.");
+    const applicants = current.applicants || [];
+    if (applicants.length < 2) return;
 
-        const data = snap.data();
-        const current = data.currentClient;
-        if (!current || current.status !== "active") {
-          throw new Error("Este cliente ya no está disponible.");
-        }
+    await finalizeAssignment(applicant);
+  };
 
-        const playerSnap = await tx.get(doc(db, "sessions", sessionId, "players", playerDoc.id));
-        const playerData = playerSnap.data();
-
-        if (String(playerData?.assignedClientId || "") !== String(current.id)) {
-          throw new Error("Este no es tu cliente asignado.");
-        }
-
-        const selectedApplicant = (current.applicants || []).find((a) => a.playerId === applicant.playerId);
-        if (!selectedApplicant) {
-          throw new Error("Ese intermediario ya no está disponible.");
-        }
-
-        const branches = JSON.parse(JSON.stringify(data.branches || makeBranches()));
-        const target = branches[selectedApplicant.branchId];
-        if (!target) throw new Error("La sucursal del intermediario no existe.");
-
-        target.primas = round2(target.primas + current.premium);
-        target.siniestros = round2(target.siniestros + current.claims);
-        target.comisiones = round2(target.comisiones + current.commission);
-
-        const movement = {
-          id: `m_${Date.now()}`,
-          createdAtMs: Date.now(),
-          clientId: current.id,
-          clientName: current.name,
-          playerId: selectedApplicant.playerId,
-          playerName: selectedApplicant.playerName,
-          branchId: selectedApplicant.branchId,
-          branchName: target.name,
-          premium: current.premium,
-          claims: current.claims,
-          commission: current.commission,
-        };
-
-        tx.update(ref, {
-          branches,
-          currentClient: {
-            ...current,
-            status: "taken",
-            selectedAtMs: Date.now(),
-            takenBy: {
-              playerId: selectedApplicant.playerId,
-              playerName: selectedApplicant.playerName,
-              branchId: selectedApplicant.branchId,
-              branchName: target.name,
-            },
-          },
-          history: [movement, ...(data.history || [])].slice(0, 50),
-        });
-      });
-    } catch (e) {
-      alert(e.message || "No fue posible elegir al intermediario.");
-    }
+  const assignSingleApplicantByFacilitator = async (applicant) => {
+    if (!isHost) return;
+    await finalizeAssignment(applicant);
   };
 
   const closeLocalSession = () => {
@@ -2202,6 +2246,7 @@ export default function App() {
                   session={session}
                   onPublishNextClient={publishNextClient}
                   onGoFinal={goFinal}
+                  onAssignSingleApplicant={assignSingleApplicantByFacilitator}
                 />
               </motion.div>
             )}
