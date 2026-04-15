@@ -898,19 +898,19 @@ function AssignedClientPanel({ assignedClient, activeClient, onChooseApplicant }
 
         <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
           <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
-            Necesidad
-          </div>
-          <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
-            {assignedClient.need}
-          </p>
-        </div>
-
-        <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
-          <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
             Contexto del caso
           </div>
           <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
             {assignedClient.context}
+          </p>
+        </div>
+
+        <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
+          <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
+            Necesidad
+          </div>
+          <p className="mt-2 text-base font-medium leading-6" style={{ color: COLORS.blueDark }}>
+            {assignedClient.need}
           </p>
         </div>
 
@@ -999,19 +999,16 @@ function FacilitatorClientCard({ client, onAssignSingleApplicant }) {
             </BadgePill>
           </div>
 
-          <p className="mt-2 text-sm font-medium" style={{ color: COLORS.blue }}>
-            {client.need}
+          <p className="mt-3 text-sm leading-6" style={{ color: COLORS.textSoft }}>
+            {client.context}
           </p>
 
-          <div
-            className="mt-4 rounded-3xl border p-4"
-            style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}
-          >
+          <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
             <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
-              Contexto del caso
+              Necesidad
             </div>
-            <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
-              {client.context}
+            <p className="mt-2 text-base font-medium leading-6" style={{ color: COLORS.blueDark }}>
+              {client.need}
             </p>
           </div>
 
@@ -1409,8 +1406,8 @@ function IntermediaryPage({ player, session, onApplyClient }) {
                     </BadgePill>
                   </div>
 
-                  <p className="mt-2 text-base font-medium" style={{ color: COLORS.blue }}>
-                    {client.need}
+                  <p className="mt-3 text-sm leading-6" style={{ color: COLORS.textSoft }}>
+                    {client.context}
                   </p>
 
                   <div
@@ -1418,10 +1415,10 @@ function IntermediaryPage({ player, session, onApplyClient }) {
                     style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
                   >
                     <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
-                      Contexto del caso
+                      Necesidad
                     </div>
-                    <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
-                      {client.context}
+                    <p className="mt-2 text-base font-medium leading-6" style={{ color: COLORS.blueDark }}>
+                      {client.need}
                     </p>
                   </div>
 
