@@ -394,10 +394,33 @@ function ClientDataBlock({ client }) {
         <StatCard label="Comisión" value={formatMoney(client.commission)} accent={COLORS.orange} />
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <BadgePill className={`border ${riskClasses(client.risk)}`}>{client.risk}</BadgePill>
-        <BadgePill style={{ backgroundColor: "#FFF2E8", color: COLORS.orange }}>{client.tag}</BadgePill>
-      </div>
+      {client.detailByRamos && client.detailByRamos.length > 0 && (
+        <div
+          className="mt-4 rounded-3xl border p-5"
+          style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}
+        >
+          <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
+            Detalle por ramos
+          </div>
+
+          <div className="mt-3 space-y-3">
+            {client.detailByRamos.map((item, index) => (
+              <div
+                key={`${item.ramo}-${index}`}
+                className="flex items-center justify-between rounded-2xl border p-4"
+                style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
+              >
+                <div className="text-sm font-medium" style={{ color: COLORS.blueDark }}>
+                  {item.ramo}
+                </div>
+                <div className="text-sm font-semibold" style={{ color: COLORS.orange }}>
+                  {formatMoney(item.valor)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
