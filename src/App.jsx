@@ -434,7 +434,6 @@ function BranchBoard({ branch, movements, alerts = [] }) {
   if (!branch) return null;
 
   const resultado = getResultado(branch);
-  const gastoPendiente = getGastoPendiente(branch);
   const utilidad = getUtilidad(branch);
   const cobertura = getCobertura(branch);
   const semaforo = getSemaforo(cobertura);
@@ -475,12 +474,11 @@ function BranchBoard({ branch, movements, alerts = [] }) {
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-6">
+      <div className="mt-5 grid gap-4 md:grid-cols-5">
         <StatCard label="Primas" value={formatMoney(branch.primas)} accent={COLORS.blue} />
         <StatCard label="Siniestros" value={formatMoney(branch.siniestros)} accent="#B45309" />
         <StatCard label="Comisiones" value={formatMoney(branch.comisiones)} accent={COLORS.orange} />
         <StatCard label="Gasto meta" value={formatMoney(branch.gastoMeta)} accent={COLORS.blueDark} />
-        <StatCard label="Gasto pendiente" value={formatMoney(gastoPendiente)} accent={gastoPendiente > 0 ? COLORS.blueDark : "#059669"} />
         <StatCard label="Utilidad" value={formatMoney(utilidad)} accent={utilidad >= 0 ? "#059669" : "#DC2626"} />
       </div>
 
@@ -840,61 +838,6 @@ function AssignedClientPanel({ assignedClient, activeClient, onChooseApplicant }
     );
   }
 
-  if (!activeClient) {
-    return (
-      <CardBox className="p-6">
-        <div
-          className="rounded-[28px] border p-5"
-          style={{
-            borderColor: COLORS.orange,
-            background: "linear-gradient(135deg, #FFF8F2, #EEF3FB)",
-          }}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-2xl text-white"
-                style={{ backgroundColor: COLORS.blue }}
-              >
-                <Building className="h-6 w-6" />
-              </div>
-              <div>
-                <div className="text-xl font-semibold" style={{ color: COLORS.blueDark }}>
-                  {assignedClient.name}
-                </div>
-                <div className="mt-1">
-                  <ClientTypeBadge type={assignedClient.customerType} />
-                </div>
-              </div>
-            </div>
-
-            <BadgePill style={{ backgroundColor: COLORS.blue, color: COLORS.white }}>
-              Pendiente
-            </BadgePill>
-          </div>
-
-          <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
-            <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
-              Necesidad
-            </div>
-            <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
-              {assignedClient.need}
-            </p>
-          </div>
-
-          <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
-            <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
-              Contexto del caso
-            </div>
-            <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
-              {assignedClient.context}
-            </p>
-          </div>
-        </div>
-      </CardBox>
-    );
-  }
-
   return (
     <CardBox className="p-6">
       <div
@@ -956,7 +899,7 @@ function AssignedClientPanel({ assignedClient, activeClient, onChooseApplicant }
 
         <ClientDataBlock client={assignedClient} />
 
-        {applicants.length >= 2 && activeClient.status === "active" && (
+        {activeClient && applicants.length >= 2 && activeClient.status === "active" && (
           <div className="mt-6 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
             <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
               Intermediarios que aplicaron por ti
@@ -989,13 +932,13 @@ function AssignedClientPanel({ assignedClient, activeClient, onChooseApplicant }
           </div>
         )}
 
-        {applicants.length === 1 && activeClient.status === "active" && (
+        {activeClient && applicants.length === 1 && activeClient.status === "active" && (
           <div className="mt-6 rounded-2xl p-4 text-sm" style={{ backgroundColor: "#E7F0FF", color: COLORS.blueDark }}>
             Ya tienes un intermediario aplicando por ti: <span className="font-semibold">{applicants[0].playerName}</span>.
           </div>
         )}
 
-        {applicants.length === 0 && activeClient.status === "active" && (
+        {activeClient && applicants.length === 0 && activeClient.status === "active" && (
           <div className="mt-6 rounded-2xl p-4 text-sm" style={{ backgroundColor: "#FFF7F1", color: COLORS.orange }}>
             Todavía no hay intermediarios aplicando por este cliente.
           </div>
@@ -1014,120 +957,126 @@ function FacilitatorClientCard({ client, onAssignSingleApplicant }) {
 
   if (!client) return null;
 
-  const isCompany = client.customerType === "Empresa";
   const applicants = client?.applicants || [];
   const singleApplicant = applicants.length === 1 ? applicants[0] : null;
 
   return (
-    <CardBox className="p-6">
+    <CardBox className="p-4 h-full">
       <div
-        className="rounded-[28px] border p-6"
+        className="rounded-[24px] border p-4 h-full"
         style={{
           borderColor: COLORS.orange,
           background: "linear-gradient(135deg, #FFF7F0 0%, #EEF3FB 100%)",
         }}
       >
-        <div className="grid gap-6 lg:grid-cols-[0.7fr_1.3fr]">
-          <div className="flex items-center justify-center">
-            <div
-              className="flex h-36 w-36 items-center justify-center rounded-[32px] text-white shadow-lg"
-              style={{ backgroundColor: isCompany ? COLORS.blue : COLORS.orange }}
-            >
-              {isCompany ? <Building className="h-16 w-16" /> : <UserRound className="h-16 w-16" />}
-            </div>
+        <ClientVisual visual={client.visual} />
+
+        <div className="mt-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-xl font-semibold" style={{ color: COLORS.blueDark }}>
+              {client.name}
+            </h3>
+            <ClientTypeBadge type={client.customerType} />
+            <BadgePill style={{ backgroundColor: COLORS.orange, color: COLORS.white }}>
+              {client.status}
+            </BadgePill>
           </div>
 
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-2xl font-semibold" style={{ color: COLORS.blueDark }}>
-                {client.name}
-              </h3>
-              <ClientTypeBadge type={client.customerType} />
-              <BadgePill style={{ backgroundColor: COLORS.orange, color: COLORS.white }}>
-                {client.status}
-              </BadgePill>
-            </div>
+          <p className="mt-2 text-sm font-medium" style={{ color: COLORS.blue }}>
+            {client.need}
+          </p>
 
-            <p className="mt-3 text-base font-medium" style={{ color: COLORS.blue }}>
-              {client.need}
+          <div
+            className="mt-4 rounded-3xl border p-4"
+            style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}
+          >
+            <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
+              Contexto del caso
+            </div>
+            <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
+              {client.context}
             </p>
+          </div>
 
-            <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
-              <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
-                Contexto del caso
-              </div>
-              <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
-                {client.context}
-              </p>
-            </div>
-
-            <div className="mt-5 flex flex-wrap gap-3">
-              {!revealed ? (
-                <ActionButton onClick={() => setRevealed(true)} variant="orange">
-                  <span className="inline-flex items-center gap-2">
-                    <Eye className="h-4 w-4" />
-                    Revelar detalles
-                  </span>
-                </ActionButton>
-              ) : (
-                <ActionButton onClick={() => setRevealed(false)} variant="secondary">
-                  <span className="inline-flex items-center gap-2">
-                    <EyeOff className="h-4 w-4" />
-                    Ocultar detalles
-                  </span>
-                </ActionButton>
-              )}
-            </div>
-
-            <AnimatePresence>
-              {revealed && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                >
-                  <ClientDataBlock client={client} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {applicants.length > 0 && client.status === "active" && (
-              <div className="mt-5 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
-                <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
-                  Intermediarios aplicando
-                </div>
-                <div className="mt-3 space-y-2">
-                  {applicants.map((app) => (
-                    <div
-                      key={app.playerId}
-                      className="rounded-2xl border p-3"
-                      style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
-                    >
-                      <div className="font-semibold" style={{ color: COLORS.blueDark }}>{app.playerName}</div>
-                      <div className="text-sm" style={{ color: COLORS.textSoft }}>{app.branchName}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {singleApplicant && (
-                  <div className="mt-4">
-                    <ActionButton onClick={() => onAssignSingleApplicant(client.id, singleApplicant)} variant="orange">
-                      Aplicar cliente
-                    </ActionButton>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {client.takenBy && (
-              <div
-                className="mt-5 rounded-2xl p-4 text-sm"
-                style={{ backgroundColor: "#E8F6EE", color: "#047857" }}
-              >
-                Elegido: <span className="font-semibold">{client.takenBy.playerName}</span> · {client.takenBy.branchName}
-              </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {!revealed ? (
+              <ActionButton onClick={() => setRevealed(true)} variant="orange">
+                <span className="inline-flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  Revelar detalles
+                </span>
+              </ActionButton>
+            ) : (
+              <ActionButton onClick={() => setRevealed(false)} variant="secondary">
+                <span className="inline-flex items-center gap-2">
+                  <EyeOff className="h-4 w-4" />
+                  Ocultar detalles
+                </span>
+              </ActionButton>
             )}
           </div>
+
+          <AnimatePresence>
+            {revealed && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+              >
+                <ClientDataBlock client={client} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {applicants.length > 0 && client.status === "active" && (
+            <div
+              className="mt-4 rounded-3xl border p-4"
+              style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}
+            >
+              <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
+                Intermediarios aplicando
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {applicants.map((app) => (
+                  <div
+                    key={app.playerId}
+                    className="rounded-2xl border p-3"
+                    style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
+                  >
+                    <div className="font-semibold" style={{ color: COLORS.blueDark }}>
+                      {app.playerName}
+                    </div>
+                    <div className="text-sm" style={{ color: COLORS.textSoft }}>
+                      {app.branchName}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {singleApplicant && (
+                <div className="mt-4">
+                  <ActionButton
+                    onClick={() => onAssignSingleApplicant(client.id, singleApplicant)}
+                    variant="orange"
+                    className="w-full"
+                  >
+                    Aplicar cliente
+                  </ActionButton>
+                </div>
+              )}
+            </div>
+          )}
+
+          {client.takenBy && (
+            <div
+              className="mt-4 rounded-2xl p-4 text-sm"
+              style={{ backgroundColor: "#E8F6EE", color: "#047857" }}
+            >
+              Elegido: <span className="font-semibold">{client.takenBy.playerName}</span> ·{" "}
+              {client.takenBy.branchName}
+            </div>
+          )}
         </div>
       </div>
     </CardBox>
@@ -1312,7 +1261,15 @@ function FacilitatorPage({ session, onPublishNextClient, onGoFinal, onAssignSing
       </div>
 
       {activeClients.length > 0 ? (
-        <div className="space-y-6">
+        <div
+          className={`grid gap-6 ${
+            activeClients.length === 1
+              ? "grid-cols-1"
+              : activeClients.length === 2
+              ? "grid-cols-1 lg:grid-cols-2"
+              : "grid-cols-1 lg:grid-cols-3"
+          }`}
+        >
           {activeClients.map((client) => (
             <FacilitatorClientCard
               key={client.id}
