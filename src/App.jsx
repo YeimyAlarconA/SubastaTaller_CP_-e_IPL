@@ -1351,12 +1351,17 @@ function IntermediaryPage({ player, session, onApplyClient }) {
                 {currentClient.need}
               </p>
 
-              <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}>
-                <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>Contexto del caso</div>
-                <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>{currentClient.context}</p>
+              <div
+                className="mt-4 rounded-3xl border p-5"
+                style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
+              >
+                <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
+                  Contexto del caso
+                </div>
+                <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
+                  {currentClient.context}
+                </p>
               </div>
-
-              <ClientDataBlock client={currentClient} />
 
               <div className="mt-5 flex flex-wrap gap-3">
                 <ActionButton
@@ -1369,13 +1374,19 @@ function IntermediaryPage({ player, session, onApplyClient }) {
               </div>
 
               {alreadyApplied && currentClient.status === "active" && (
-                <div className="mt-4 rounded-2xl p-3 text-sm" style={{ backgroundColor: "#E7F0FF", color: COLORS.blueDark }}>
+                <div
+                  className="mt-4 rounded-2xl p-3 text-sm"
+                  style={{ backgroundColor: "#E7F0FF", color: COLORS.blueDark }}
+                >
                   Ya aplicaste por este cliente.
                 </div>
               )}
 
               {currentClient.takenBy && currentClient.takenBy.playerId === player.id && (
-                <div className="mt-4 rounded-2xl p-3 text-sm" style={{ backgroundColor: "#E8F6EE", color: "#047857" }}>
+                <div
+                  className="mt-4 rounded-2xl p-3 text-sm"
+                  style={{ backgroundColor: "#E8F6EE", color: "#047857" }}
+                >
                   El cliente te eligió a ti para continuar el proceso.
                 </div>
               )}
