@@ -196,6 +196,11 @@ function getProfileById(profileId) {
   return INTERMEDIARY_PROFILES.find((p) => p.id === profileId) || null;
 }
 
+function getAssignedClientActive(session, assignedClientId) {
+  if (!session?.activeClients || !assignedClientId) return null;
+  return session.activeClients.find((c) => String(c.id) === String(assignedClientId)) || null;
+}
+
 async function ensureAnonAuth() {
   if (!auth.currentUser) {
     await signInAnonymously(auth);
@@ -812,11 +817,9 @@ function IntermediaryProfileCard({ profile }) {
   );
 }
 
-function AssignedClientPanel({ assignedClient, session, onChooseApplicant }) {
-  const currentClient = session?.currentClient || null;
-  const isCurrent = currentClient?.id === assignedClient?.id;
-  const applicants = isCurrent ? currentClient?.applicants || [] : [];
-  const status = isCurrent ? currentClient?.status || "activo" : "pendiente";
+function AssignedClientPanel({ assignedClient, activeClient, onChooseApplicant }) {
+  const applicants = activeClient?.applicants || [];
+  const status = activeClient?.status || assignedClient?.status || "pending";
 
   if (!assignedClient) {
     return (
@@ -833,6 +836,61 @@ function AssignedClientPanel({ assignedClient, session, onChooseApplicant }) {
         <p className="mt-2" style={{ color: COLORS.textSoft }}>
           El host ya te asignó el rol de cliente, pero todavía no ha seleccionado cuál cliente representas.
         </p>
+      </CardBox>
+    );
+  }
+
+  if (!activeClient) {
+    return (
+      <CardBox className="p-6">
+        <div
+          className="rounded-[28px] border p-5"
+          style={{
+            borderColor: COLORS.orange,
+            background: "linear-gradient(135deg, #FFF8F2, #EEF3FB)",
+          }}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-2xl text-white"
+                style={{ backgroundColor: COLORS.blue }}
+              >
+                <Building className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-xl font-semibold" style={{ color: COLORS.blueDark }}>
+                  {assignedClient.name}
+                </div>
+                <div className="mt-1">
+                  <ClientTypeBadge type={assignedClient.customerType} />
+                </div>
+              </div>
+            </div>
+
+            <BadgePill style={{ backgroundColor: COLORS.blue, color: COLORS.white }}>
+              Pendiente
+            </BadgePill>
+          </div>
+
+          <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
+            <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
+              Necesidad
+            </div>
+            <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
+              {assignedClient.need}
+            </p>
+          </div>
+
+          <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
+            <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
+              Contexto del caso
+            </div>
+            <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
+              {assignedClient.context}
+            </p>
+          </div>
+        </div>
       </CardBox>
     );
   }
@@ -883,7 +941,7 @@ function AssignedClientPanel({ assignedClient, session, onChooseApplicant }) {
             Necesidad
           </div>
           <p className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
-            {assignedClient.need || "Sin necesidad registrada"}
+            {assignedClient.need}
           </p>
         </div>
 
@@ -892,13 +950,13 @@ function AssignedClientPanel({ assignedClient, session, onChooseApplicant }) {
             Contexto del caso
           </div>
           <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
-            {assignedClient.context || "Sin contexto registrado"}
+            {assignedClient.context}
           </p>
         </div>
 
         <ClientDataBlock client={assignedClient} />
 
-        {isCurrent && applicants.length >= 2 && currentClient?.status === "active" && (
+        {applicants.length >= 2 && activeClient.status === "active" && (
           <div className="mt-6 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
             <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
               Intermediarios que aplicaron por ti
@@ -919,7 +977,7 @@ function AssignedClientPanel({ assignedClient, session, onChooseApplicant }) {
                     </div>
                   </div>
 
-                  <ActionButton onClick={() => onChooseApplicant(app)} variant="orange">
+                  <ActionButton onClick={() => onChooseApplicant(activeClient.id, app)} variant="orange">
                     <span className="inline-flex items-center gap-2">
                       <Check className="h-4 w-4" />
                       Elegir intermediario
@@ -931,13 +989,13 @@ function AssignedClientPanel({ assignedClient, session, onChooseApplicant }) {
           </div>
         )}
 
-        {isCurrent && applicants.length === 1 && currentClient?.status === "active" && (
+        {applicants.length === 1 && activeClient.status === "active" && (
           <div className="mt-6 rounded-2xl p-4 text-sm" style={{ backgroundColor: "#E7F0FF", color: COLORS.blueDark }}>
             Ya tienes un intermediario aplicando por ti: <span className="font-semibold">{applicants[0].playerName}</span>.
           </div>
         )}
 
-        {isCurrent && applicants.length === 0 && currentClient?.status === "active" && (
+        {applicants.length === 0 && activeClient.status === "active" && (
           <div className="mt-6 rounded-2xl p-4 text-sm" style={{ backgroundColor: "#FFF7F1", color: COLORS.orange }}>
             Todavía no hay intermediarios aplicando por este cliente.
           </div>
@@ -947,23 +1005,17 @@ function AssignedClientPanel({ assignedClient, session, onChooseApplicant }) {
   );
 }
 
-function FacilitatorClientCard({ currentClient, onAssignSingleApplicant }) {
+function FacilitatorClientCard({ client, onAssignSingleApplicant }) {
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
     setRevealed(false);
-  }, [currentClient?.id]);
+  }, [client?.id]);
 
-  if (!currentClient) {
-    return (
-      <CardBox className="p-8 text-center text-sm" style={{ color: COLORS.textSoft }}>
-        No hay cliente activo. Usa “Siguiente cliente”.
-      </CardBox>
-    );
-  }
+  if (!client) return null;
 
-  const isCompany = currentClient.customerType === "Empresa";
-  const applicants = currentClient?.applicants || [];
+  const isCompany = client.customerType === "Empresa";
+  const applicants = client?.applicants || [];
   const singleApplicant = applicants.length === 1 ? applicants[0] : null;
 
   return (
@@ -988,16 +1040,16 @@ function FacilitatorClientCard({ currentClient, onAssignSingleApplicant }) {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-2xl font-semibold" style={{ color: COLORS.blueDark }}>
-                {currentClient.name}
+                {client.name}
               </h3>
-              <ClientTypeBadge type={currentClient.customerType} />
+              <ClientTypeBadge type={client.customerType} />
               <BadgePill style={{ backgroundColor: COLORS.orange, color: COLORS.white }}>
-                {currentClient.status}
+                {client.status}
               </BadgePill>
             </div>
 
             <p className="mt-3 text-base font-medium" style={{ color: COLORS.blue }}>
-              {currentClient.need}
+              {client.need}
             </p>
 
             <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
@@ -1005,7 +1057,7 @@ function FacilitatorClientCard({ currentClient, onAssignSingleApplicant }) {
                 Contexto del caso
               </div>
               <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
-                {currentClient.context}
+                {client.context}
               </p>
             </div>
 
@@ -1034,12 +1086,12 @@ function FacilitatorClientCard({ currentClient, onAssignSingleApplicant }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                 >
-                  <ClientDataBlock client={currentClient} />
+                  <ClientDataBlock client={client} />
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {applicants.length > 0 && currentClient.status === "active" && (
+            {applicants.length > 0 && client.status === "active" && (
               <div className="mt-5 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
                 <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
                   Intermediarios aplicando
@@ -1059,7 +1111,7 @@ function FacilitatorClientCard({ currentClient, onAssignSingleApplicant }) {
 
                 {singleApplicant && (
                   <div className="mt-4">
-                    <ActionButton onClick={() => onAssignSingleApplicant(singleApplicant)} variant="orange">
+                    <ActionButton onClick={() => onAssignSingleApplicant(client.id, singleApplicant)} variant="orange">
                       Aplicar cliente
                     </ActionButton>
                   </div>
@@ -1067,13 +1119,12 @@ function FacilitatorClientCard({ currentClient, onAssignSingleApplicant }) {
               </div>
             )}
 
-            {currentClient.takenBy && (
+            {client.takenBy && (
               <div
                 className="mt-5 rounded-2xl p-4 text-sm"
                 style={{ backgroundColor: "#E8F6EE", color: "#047857" }}
               >
-                Elegido: <span className="font-semibold">{currentClient.takenBy.playerName}</span> ·{" "}
-                {currentClient.takenBy.branchName}
+                Elegido: <span className="font-semibold">{client.takenBy.playerName}</span> · {client.takenBy.branchName}
               </div>
             )}
           </div>
@@ -1239,7 +1290,7 @@ function GameSetupPage({
 }
 
 function FacilitatorPage({ session, onPublishNextClient, onGoFinal, onAssignSingleApplicant }) {
-  const currentClient = session?.currentClient || null;
+  const activeClients = session?.activeClients || [];
   const branches = session?.branches || {};
   const alerts = session?.alerts || [];
 
@@ -1260,10 +1311,21 @@ function FacilitatorPage({ session, onPublishNextClient, onGoFinal, onAssignSing
         </ActionButton>
       </div>
 
-      <FacilitatorClientCard
-        currentClient={currentClient}
-        onAssignSingleApplicant={onAssignSingleApplicant}
-      />
+      {activeClients.length > 0 ? (
+        <div className="space-y-6">
+          {activeClients.map((client) => (
+            <FacilitatorClientCard
+              key={client.id}
+              client={client}
+              onAssignSingleApplicant={onAssignSingleApplicant}
+            />
+          ))}
+        </div>
+      ) : (
+        <CardBox className="p-8 text-center text-sm" style={{ color: COLORS.textSoft }}>
+          No hay clientes activos. Usa “Siguiente cliente”.
+        </CardBox>
+      )}
 
       {alerts.length > 0 && (
         <CardBox className="p-6">
@@ -1323,11 +1385,10 @@ function SucursalPage({ player, session }) {
 }
 
 function IntermediaryPage({ player, session, onApplyClient }) {
-  const currentClient = session?.currentClient || null;
+  const activeClients = session?.activeClients || [];
   const profile = getProfileById(player?.assignedIntermediaryId || "");
   const alerts = session?.alerts || [];
   const myLatestAlert = alerts.find((a) => a.playerId === player.id);
-  const alreadyApplied = currentClient?.applicants?.some((a) => a.playerId === player.id);
 
   return (
     <div className="space-y-6">
@@ -1350,72 +1411,78 @@ function IntermediaryPage({ player, session, onApplyClient }) {
         </CardBox>
       )}
 
-      {!currentClient ? (
+      {activeClients.length === 0 ? (
         <CardBox className="p-8 text-center text-sm" style={{ color: COLORS.textSoft }}>
-          No hay cliente activo en este momento. Espera a que el host publique uno.
+          No hay clientes activos en este momento. Espera a que el host publique el siguiente bloque.
         </CardBox>
       ) : (
-        <CardBox className="p-6">
-          <div className="grid gap-6 lg:grid-cols-[0.75fr_1.25fr]">
-            <ClientVisual visual={currentClient.visual} />
+        <div className="grid gap-6 lg:grid-cols-3">
+          {activeClients.map((client) => {
+            const alreadyApplied = client?.applicants?.some((a) => a.playerId === player.id);
 
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-2xl font-semibold" style={{ color: COLORS.blueDark }}>
-                  {currentClient.name}
-                </h3>
-                <ClientTypeBadge type={currentClient.customerType} />
-                <BadgePill style={{ backgroundColor: COLORS.orange, color: COLORS.white }}>
-                  {currentClient.status}
-                </BadgePill>
-              </div>
+            return (
+              <CardBox key={client.id} className="p-6">
+                <ClientVisual visual={client.visual} />
 
-              <p className="mt-2 text-base font-medium" style={{ color: COLORS.blue }}>
-                {currentClient.need}
-              </p>
+                <div className="mt-5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-xl font-semibold" style={{ color: COLORS.blueDark }}>
+                      {client.name}
+                    </h3>
+                    <ClientTypeBadge type={client.customerType} />
+                    <BadgePill style={{ backgroundColor: COLORS.orange, color: COLORS.white }}>
+                      {client.status}
+                    </BadgePill>
+                  </div>
 
-              <div
-                className="mt-4 rounded-3xl border p-5"
-                style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
-              >
-                <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
-                  Contexto del caso
+                  <p className="mt-2 text-base font-medium" style={{ color: COLORS.blue }}>
+                    {client.need}
+                  </p>
+
+                  <div
+                    className="mt-4 rounded-3xl border p-5"
+                    style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
+                  >
+                    <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
+                      Contexto del caso
+                    </div>
+                    <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
+                      {client.context}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <ActionButton
+                      onClick={() => onApplyClient(client.id)}
+                      disabled={client.status !== "active" || !profile || alreadyApplied}
+                      variant="orange"
+                    >
+                      Aplicar
+                    </ActionButton>
+                  </div>
+
+                  {alreadyApplied && client.status === "active" && (
+                    <div
+                      className="mt-4 rounded-2xl p-3 text-sm"
+                      style={{ backgroundColor: "#E7F0FF", color: COLORS.blueDark }}
+                    >
+                      Ya aplicaste por este cliente.
+                    </div>
+                  )}
+
+                  {client.takenBy && client.takenBy.playerId === player.id && (
+                    <div
+                      className="mt-4 rounded-2xl p-3 text-sm"
+                      style={{ backgroundColor: "#E8F6EE", color: "#047857" }}
+                    >
+                      El cliente te eligió a ti para continuar el proceso.
+                    </div>
+                  )}
                 </div>
-                <p className="mt-2 text-sm leading-6" style={{ color: COLORS.textSoft }}>
-                  {currentClient.context}
-                </p>
-              </div>
-
-              <div className="mt-5 flex flex-wrap gap-3">
-                <ActionButton
-                  onClick={onApplyClient}
-                  disabled={currentClient.status !== "active" || !profile || alreadyApplied}
-                  variant="orange"
-                >
-                  Aplicar
-                </ActionButton>
-              </div>
-
-              {alreadyApplied && currentClient.status === "active" && (
-                <div
-                  className="mt-4 rounded-2xl p-3 text-sm"
-                  style={{ backgroundColor: "#E7F0FF", color: COLORS.blueDark }}
-                >
-                  Ya aplicaste por este cliente.
-                </div>
-              )}
-
-              {currentClient.takenBy && currentClient.takenBy.playerId === player.id && (
-                <div
-                  className="mt-4 rounded-2xl p-3 text-sm"
-                  style={{ backgroundColor: "#E8F6EE", color: "#047857" }}
-                >
-                  El cliente te eligió a ti para continuar el proceso.
-                </div>
-              )}
-            </div>
-          </div>
-        </CardBox>
+              </CardBox>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -1427,6 +1494,8 @@ function ClientePage({ player, session, onChooseApplicant }) {
     ? seedClients.find((c) => String(c.id) === assignedClientId)
     : null;
 
+  const activeClient = getAssignedClientActive(session, assignedClientId);
+
   return (
     <div className="space-y-6">
       <SectionHeader
@@ -1436,7 +1505,7 @@ function ClientePage({ player, session, onChooseApplicant }) {
       />
       <AssignedClientPanel
         assignedClient={assignedClient}
-        session={session}
+        activeClient={activeClient}
         onChooseApplicant={onChooseApplicant}
       />
     </div>
@@ -1444,7 +1513,7 @@ function ClientePage({ player, session, onChooseApplicant }) {
 }
 
 function ObservadorPage({ session }) {
-  const currentClient = session?.currentClient || null;
+  const activeClients = session?.activeClients || [];
   const branches = session?.branches || {};
 
   return (
@@ -1455,7 +1524,21 @@ function ObservadorPage({ session }) {
         icon={LayoutDashboard}
       />
 
-      <FacilitatorClientCard currentClient={currentClient} onAssignSingleApplicant={() => {}} />
+      {activeClients.length > 0 ? (
+        <div className="space-y-6">
+          {activeClients.map((client) => (
+            <FacilitatorClientCard
+              key={client.id}
+              client={client}
+              onAssignSingleApplicant={() => {}}
+            />
+          ))}
+        </div>
+      ) : (
+        <CardBox className="p-8 text-center text-sm" style={{ color: COLORS.textSoft }}>
+          No hay clientes activos en este momento.
+        </CardBox>
+      )}
 
       <div className="space-y-6">
         <BranchBoard
@@ -1642,7 +1725,7 @@ export default function App() {
         hostId: user.uid,
         hostName,
         createdAtMs: Date.now(),
-        currentClient: null,
+        activeClients: [],
         remainingClients: seedClients,
         history: [],
         alerts: [],
@@ -1740,10 +1823,11 @@ export default function App() {
         if (!snap.exists()) throw new Error("La partida ya no existe.");
 
         const data = snap.data();
-        const current = data.currentClient;
+        const activeClients = data.activeClients || [];
+        const hasOpenClients = activeClients.some((c) => c.status === "active");
 
-        if (current && current.status === "active") {
-          throw new Error("Ya hay un cliente activo.");
+        if (hasOpenClients) {
+          throw new Error("Todavía hay clientes activos en pantalla. Primero ciérralos antes de cargar el siguiente bloque.");
         }
 
         const remaining = [...(data.remainingClients || [])];
@@ -1751,26 +1835,26 @@ export default function App() {
           throw new Error("No quedan clientes por publicar.");
         }
 
-        const next = remaining.shift();
+        const nextBlock = remaining.splice(0, 3).map((client) => ({
+          ...client,
+          status: "active",
+          publishedAtMs: Date.now(),
+          takenBy: null,
+          applicants: [],
+        }));
 
         tx.update(ref, {
-          currentClient: {
-            ...next,
-            status: "active",
-            publishedAtMs: Date.now(),
-            takenBy: null,
-            applicants: [],
-          },
+          activeClients: nextBlock,
           remainingClients: remaining,
           status: "live",
         });
       });
     } catch (e) {
-      alert(e.message || "No fue posible publicar el cliente.");
+      alert(e.message || "No fue posible publicar el siguiente bloque de clientes.");
     }
   };
 
-  const finalizeAssignment = async (selectedApplicant) => {
+  const finalizeAssignment = async (clientId, selectedApplicant) => {
     if (!sessionId) return;
 
     const ref = doc(db, "sessions", sessionId);
@@ -1781,12 +1865,22 @@ export default function App() {
         if (!snap.exists()) throw new Error("La partida ya no existe.");
 
         const data = snap.data();
-        const current = data.currentClient;
-        if (!current || current.status !== "active") {
-          throw new Error("Este cliente ya no está disponible.");
+        const activeClients = [...(data.activeClients || [])];
+        const clientIndex = activeClients.findIndex((c) => String(c.id) === String(clientId));
+
+        if (clientIndex === -1) {
+          throw new Error("Ese cliente ya no está activo.");
         }
 
-        const validApplicant = (current.applicants || []).find((a) => a.playerId === selectedApplicant.playerId);
+        const current = activeClients[clientIndex];
+        if (current.status !== "active") {
+          throw new Error("Ese cliente ya no está disponible.");
+        }
+
+        const validApplicant = (current.applicants || []).find(
+          (a) => a.playerId === selectedApplicant.playerId
+        );
+
         if (!validApplicant) {
           throw new Error("Ese intermediario ya no está disponible.");
         }
@@ -1813,19 +1907,21 @@ export default function App() {
           commission: current.commission,
         };
 
+        activeClients[clientIndex] = {
+          ...current,
+          status: "taken",
+          selectedAtMs: Date.now(),
+          takenBy: {
+            playerId: validApplicant.playerId,
+            playerName: validApplicant.playerName,
+            branchId: validApplicant.branchId,
+            branchName: target.name,
+          },
+        };
+
         tx.update(ref, {
           branches,
-          currentClient: {
-            ...current,
-            status: "taken",
-            selectedAtMs: Date.now(),
-            takenBy: {
-              playerId: validApplicant.playerId,
-              playerName: validApplicant.playerName,
-              branchId: validApplicant.branchId,
-              branchName: target.name,
-            },
-          },
+          activeClients,
           history: [movement, ...(data.history || [])].slice(0, 50),
         });
       });
@@ -1834,7 +1930,7 @@ export default function App() {
     }
   };
 
-  const applyToClient = async () => {
+  const applyToClient = async (clientId) => {
     if (!sessionId || !playerDoc || playerDoc.role !== "intermediary") return;
 
     const ref = doc(db, "sessions", sessionId);
@@ -1845,9 +1941,16 @@ export default function App() {
         if (!snap.exists()) throw new Error("La partida ya no existe.");
 
         const data = snap.data();
-        const current = data.currentClient;
-        if (!current || current.status !== "active") {
-          throw new Error("Este cliente ya no está disponible.");
+        const activeClients = [...(data.activeClients || [])];
+        const clientIndex = activeClients.findIndex((c) => String(c.id) === String(clientId));
+
+        if (clientIndex === -1) {
+          throw new Error("Ese cliente ya no está disponible.");
+        }
+
+        const current = activeClients[clientIndex];
+        if (current.status !== "active") {
+          throw new Error("Ese cliente ya no está disponible.");
         }
 
         const playerSnap = await tx.get(doc(db, "sessions", sessionId, "players", playerDoc.id));
@@ -1858,7 +1961,10 @@ export default function App() {
           throw new Error("No tienes un intermediario asignado.");
         }
 
-        const hasIdoneidad = profile.idoneidad.includes(current.line);
+        const hasIdoneidad = profile.idoneidad.some((item) =>
+          current.line.toLowerCase().includes(item.toLowerCase())
+        );
+
         const alerts = [...(data.alerts || [])];
 
         if (!hasIdoneidad) {
@@ -1892,11 +1998,13 @@ export default function App() {
           profileId: profile.id,
         });
 
+        activeClients[clientIndex] = {
+          ...current,
+          applicants,
+        };
+
         tx.update(ref, {
-          currentClient: {
-            ...current,
-            applicants,
-          },
+          activeClients,
         });
       });
     } catch (e) {
@@ -1904,21 +2012,21 @@ export default function App() {
     }
   };
 
-  const chooseApplicant = async (applicant) => {
+  const chooseApplicant = async (clientId, applicant) => {
     if (!sessionId || !playerDoc || playerDoc.role !== "cliente") return;
 
-    const current = session?.currentClient;
-    if (!current) return;
+    const activeClient = getAssignedClientActive(session, playerDoc?.assignedClientId);
+    if (!activeClient) return;
 
-    const applicants = current.applicants || [];
+    const applicants = activeClient.applicants || [];
     if (applicants.length < 2) return;
 
-    await finalizeAssignment(applicant);
+    await finalizeAssignment(clientId, applicant);
   };
 
-  const assignSingleApplicantByFacilitator = async (applicant) => {
+  const assignSingleApplicantByFacilitator = async (clientId, applicant) => {
     if (!isHost) return;
-    await finalizeAssignment(applicant);
+    await finalizeAssignment(clientId, applicant);
   };
 
   const closeLocalSession = () => {
