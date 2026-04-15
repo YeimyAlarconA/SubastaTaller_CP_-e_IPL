@@ -392,21 +392,23 @@ function ClientDataBlock({ client }) {
 
   return (
     <div className="mt-5">
-      <div
-        className="rounded-3xl border p-4"
-        style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
-      >
+      <div className="flex justify-center">
         <div
-          className="text-[11px] uppercase tracking-wide"
-          style={{ color: COLORS.textSoft }}
+          className="rounded-3xl border px-6 py-4 inline-block min-w-[220px] max-w-[420px]"
+          style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
         >
-          Línea
-        </div>
-        <div
-          className="mt-2 text-xl font-semibold leading-snug"
-          style={{ color: COLORS.blueDark }}
-        >
-          {client.line}
+          <div
+            className="text-[11px] uppercase tracking-wide text-center"
+            style={{ color: COLORS.textSoft }}
+          >
+            Línea
+          </div>
+          <div
+            className="mt-2 text-xl font-semibold leading-snug text-center"
+            style={{ color: COLORS.blueDark }}
+          >
+            {client.line}
+          </div>
         </div>
       </div>
 
