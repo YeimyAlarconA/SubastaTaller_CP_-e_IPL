@@ -285,13 +285,20 @@ function ActionButton({ children, onClick, disabled = false, variant = "primary"
 function StatCard({ label, value, accent = COLORS.blue }) {
   return (
     <div
-      className="rounded-3xl p-4 border"
+      className="rounded-3xl p-4 border min-h-[120px] flex flex-col justify-between"
       style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
     >
-      <div className="text-[11px] uppercase tracking-wide" style={{ color: COLORS.textSoft }}>
+      <div
+        className="text-[11px] uppercase tracking-wide"
+        style={{ color: COLORS.textSoft }}
+      >
         {label}
       </div>
-      <div className="mt-1 text-2xl font-semibold" style={{ color: accent }}>
+
+      <div
+        className="mt-2 text-[17px] font-semibold leading-7 break-words"
+        style={{ color: accent }}
+      >
         {value}
       </div>
     </div>
