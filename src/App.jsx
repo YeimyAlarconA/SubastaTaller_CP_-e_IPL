@@ -285,20 +285,13 @@ function ActionButton({ children, onClick, disabled = false, variant = "primary"
 function StatCard({ label, value, accent = COLORS.blue }) {
   return (
     <div
-      className="rounded-3xl p-4 border min-h-[120px] flex flex-col justify-between"
+      className="rounded-3xl p-4 border"
       style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
     >
-      <div
-        className="text-[11px] uppercase tracking-wide"
-        style={{ color: COLORS.textSoft }}
-      >
+      <div className="text-[11px] uppercase tracking-wide" style={{ color: COLORS.textSoft }}>
         {label}
       </div>
-
-      <div
-        className="mt-2 text-[17px] font-semibold leading-7 break-words"
-        style={{ color: accent }}
-      >
+      <div className="mt-1 text-2xl font-semibold" style={{ color: accent }}>
         {value}
       </div>
     </div>
@@ -399,8 +392,25 @@ function ClientDataBlock({ client }) {
 
   return (
     <div className="mt-5">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Línea" value={client.line} />
+      <div
+        className="rounded-3xl border p-4"
+        style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
+      >
+        <div
+          className="text-[11px] uppercase tracking-wide"
+          style={{ color: COLORS.textSoft }}
+        >
+          Línea
+        </div>
+        <div
+          className="mt-2 text-xl font-semibold leading-snug"
+          style={{ color: COLORS.blueDark }}
+        >
+          {client.line}
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
         <StatCard label="Prima" value={formatMoney(client.premium)} accent={COLORS.blue} />
         <StatCard label="Siniestro" value={formatMoney(client.claims)} accent="#B45309" />
         <StatCard label="Comisión" value={formatMoney(client.commission)} accent={COLORS.orange} />
