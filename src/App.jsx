@@ -410,7 +410,7 @@ function ClientDataBlock({ client }) {
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="mt-3 grid grid-cols-3 gap-3">
         <StatCard label="Prima" value={formatMoney(client.premium)} accent={COLORS.blue} />
         <StatCard label="Siniestro" value={formatMoney(client.claims)} accent="#B45309" />
         <StatCard label="Comisión" value={formatMoney(client.commission)} accent={COLORS.orange} />
@@ -1102,6 +1102,7 @@ function GameSetupPage({
   players,
   onAssignRole,
   onCloseSession,
+  onCloseSessionForEveryone,
   onGoFacilitator,
 }) {
   return (
@@ -1135,6 +1136,11 @@ function GameSetupPage({
             <ActionButton onClick={onGoFacilitator} variant="orange">
               Ir a facilitador
             </ActionButton>
+
+            <ActionButton onClick={onCloseSessionForEveryone} variant="primary">
+              Cerrar partida para todos
+            </ActionButton>
+
             <ActionButton onClick={onCloseSession} variant="secondary">
               Cerrar sesión local
             </ActionButton>
@@ -1682,6 +1688,21 @@ export default function App() {
     return () => unsub();
   }, [sessionId, uid, isHost]);
 
+  useEffect(() => {
+    if (!session) return;
+
+    if (session.status === "closed") {
+      clearPersisted();
+      setSessionId("");
+      setSession(null);
+      setPlayers([]);
+      setPlayerDoc(null);
+      setIsHost(false);
+      setScreen("inicio");
+      alert("La partida fue cerrada por el host.");
+    }
+  }, [session]);
+
   const createHostSession = async (hostName) => {
     setBusy(true);
     setGlobalError("");
@@ -2018,6 +2039,23 @@ export default function App() {
     await finalizeAssignment(clientId, applicant);
   };
 
+  const closeSessionForEveryone = async () => {
+    if (!sessionId || !isHost) return;
+
+    const confirmed = window.confirm("¿Seguro que quieres cerrar la partida para todos?");
+    if (!confirmed) return;
+
+    try {
+      const ref = doc(db, "sessions", sessionId);
+      await updateDoc(ref, {
+        status: "closed",
+        closedAtMs: Date.now(),
+      });
+    } catch (e) {
+      alert("No fue posible cerrar la partida para todos.");
+    }
+  };
+
   const closeLocalSession = () => {
     clearPersisted();
     setSessionId("");
@@ -2045,6 +2083,7 @@ export default function App() {
   }
 
   const showFacilitatorTab = isHost && !!sessionId;
+  const showFinalTab = isHost && !!sessionId;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: COLORS.bg, color: COLORS.blueDark }}>
@@ -2083,9 +2122,11 @@ export default function App() {
               </PanelButton>
             )}
 
-            <PanelButton active={screen === "final"} icon={Trophy} onClick={() => setScreen("final")}>
-              Ranking final
-            </PanelButton>
+            {showFinalTab && (
+              <PanelButton active={screen === "final"} icon={Trophy} onClick={() => setScreen("final")}>
+                Ranking final
+              </PanelButton>
+            )}
 
             {(sessionId || session) && (
               <ActionButton onClick={closeLocalSession} variant="secondary">
@@ -2346,6 +2387,7 @@ export default function App() {
                     players={players}
                     onAssignRole={assignRole}
                     onCloseSession={closeLocalSession}
+                    onCloseSessionForEveryone={closeSessionForEveryone}
                     onGoFacilitator={goFacilitator}
                   />
                 ) : !playerDoc ? (
@@ -2382,7 +2424,7 @@ export default function App() {
               </motion.div>
             )}
 
-            {screen === "final" && (
+            {showFinalTab && screen === "final" && (
               <motion.div
                 key="final"
                 initial={{ opacity: 0, y: 8 }}
