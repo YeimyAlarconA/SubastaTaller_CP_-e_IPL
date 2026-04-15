@@ -392,23 +392,21 @@ function ClientDataBlock({ client }) {
 
   return (
     <div className="mt-5">
-      <div className="flex justify-center">
+      <div
+        className="rounded-3xl border p-4"
+        style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
+      >
         <div
-          className="rounded-3xl border px-6 py-4 inline-block min-w-[220px] max-w-[420px]"
-          style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
+          className="text-[11px] uppercase tracking-wide"
+          style={{ color: COLORS.textSoft }}
         >
-          <div
-            className="text-[11px] uppercase tracking-wide text-center"
-            style={{ color: COLORS.textSoft }}
-          >
-            Línea
-          </div>
-          <div
-            className="mt-2 text-xl font-semibold leading-snug text-center"
-            style={{ color: COLORS.blueDark }}
-          >
-            {client.line}
-          </div>
+          Línea
+        </div>
+        <div
+          className="mt-2 text-xl font-semibold leading-snug"
+          style={{ color: COLORS.blueDark }}
+        >
+          {client.line}
         </div>
       </div>
 
@@ -1306,7 +1304,7 @@ function FacilitatorPage({ session, onPublishNextClient, onGoFinal, onAssignSing
       {alerts.length > 0 && (
         <CardBox className="p-6">
           <h3 className="text-xl font-semibold" style={{ color: COLORS.blue }}>
-            Alertas IPL
+            Alertas
           </h3>
           <div className="mt-4 space-y-3">
             {alerts.slice(0, 5).map((alert) => (
@@ -1937,14 +1935,32 @@ export default function App() {
           throw new Error("No tienes un intermediario asignado.");
         }
 
-        const hasIdoneidad = profile.idoneidad.some((item) =>
-          current.line.toLowerCase().includes(item.toLowerCase())
-        );
-
         const alerts = [...(data.alerts || [])];
 
-        if (!hasIdoneidad) {
-          const message = `${profile.displayName} intentó tomar ${current.name} – ${current.line}, pero no tiene idoneidad en ${current.line}.`;
+        const clientLines = current.line
+          .split("/")
+          .map((x) => x.trim())
+          .filter(Boolean);
+
+        const matchedLines = clientLines.filter((line) =>
+          profile.idoneidad.some((id) => id.toLowerCase() === line.toLowerCase())
+        );
+
+        const missingLines = clientLines.filter(
+          (line) => !profile.idoneidad.some((id) => id.toLowerCase() === line.toLowerCase())
+        );
+
+        const hasFullIdoneidad = missingLines.length === 0;
+
+        if (!hasFullIdoneidad) {
+          let message = `${profile.displayName} intentó tomar ${current.name}, `;
+
+          if (matchedLines.length > 0) {
+            message += `pero no puede hacerlo porque, aunque tiene idoneidad en ${matchedLines.join(" y ")}, no la tiene en ${missingLines.join(" y ")}.`;
+          } else {
+            message += `pero no puede hacerlo porque no tiene idoneidad en ${missingLines.join(" y ")}.`;
+          }
+
           const alertObj = {
             id: `a_${Date.now()}`,
             type: "ipl_block",
