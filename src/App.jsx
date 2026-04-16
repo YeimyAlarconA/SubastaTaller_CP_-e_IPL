@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import logoDireccion from "./assets/logo-bi.png";
 import {
   LayoutDashboard,
   ListChecks,
@@ -325,11 +326,16 @@ function LogoHeader() {
   return (
     <div className="flex items-center gap-3">
       <div
-        className="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-sm"
-        style={{ backgroundColor: COLORS.blueDark }}
+        className="flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden shadow-sm bg-white border"
+        style={{ borderColor: COLORS.border }}
       >
-        <Building2 className="h-5 w-5" />
+        <img
+          src={logoDireccion}
+          alt="Logo BI"
+          className="h-12 w-12 object-contain"
+        />
       </div>
+
       <div>
         <div className="text-xs uppercase tracking-[0.2em]" style={{ color: COLORS.textSoft }}>
           Estado
