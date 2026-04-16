@@ -1154,112 +1154,119 @@ function GameSetupPage({
           Asigna rol y perfil del personaje.
         </p>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {players.length ? (
-            players.map((player) => (
-              <div
-                key={player.id}
-                className="rounded-[28px] border p-5"
-                style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
-              >
-                <div className="flex flex-col items-center text-center">
-                  <div
-                    className="flex h-16 w-16 items-center justify-center rounded-full text-white shadow-sm"
-                    style={{ backgroundColor: COLORS.blue }}
-                  >
-                    <UserRound className="h-8 w-8" />
+            players.map((player) => {
+              const hasAssignedRole = player.role && player.role !== "unassigned";
+
+              return (
+                <div
+                  key={player.id}
+                  className="rounded-[28px] border p-5"
+                  style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <div
+                      className="flex h-16 w-16 items-center justify-center rounded-full text-white shadow-sm"
+                      style={{ backgroundColor: COLORS.blue }}
+                    >
+                      <UserRound className="h-8 w-8" />
+                    </div>
+
+                    <div
+                      className="mt-4 text-xl font-semibold"
+                      style={{ color: hasAssignedRole ? COLORS.orange : COLORS.blueDark }}
+                    >
+                      {player.name}
+                    </div>
+
+                    <div className="mt-2">
+                      <BadgePill
+                        style={{
+                          backgroundColor: player.role === "unassigned" ? "#E5E7EB" : "#FFF2E8",
+                          color: player.role === "unassigned" ? "#4B5563" : COLORS.orange,
+                        }}
+                      >
+                        {roleLabel(player.role, player.branchId)}
+                      </BadgePill>
+                    </div>
                   </div>
 
-                  <div className="mt-4 text-xl font-semibold" style={{ color: COLORS.blueDark }}>
-                    {player.name}
-                  </div>
-
-                  <div className="mt-2">
-                    <BadgePill
-                      style={{
-                        backgroundColor: player.role === "unassigned" ? "#E5E7EB" : "#E7F0FF",
-                        color: player.role === "unassigned" ? "#4B5563" : COLORS.blueDark,
+                  <div className="mt-5 space-y-3">
+                    <select
+                      className="w-full rounded-2xl border bg-white px-3 py-3 text-sm outline-none"
+                      style={{ borderColor: COLORS.border }}
+                      value={roleOptionValue(player.role || "unassigned", player.branchId || "")}
+                      onChange={(e) => {
+                        const [role, branchId] = e.target.value.split("|");
+                        onAssignRole({
+                          playerId: player.id,
+                          role,
+                          branchId: role === "sucursal" ? (branchId || "") : "",
+                          assignedClientId: role === "cliente" ? player.assignedClientId || "" : "",
+                          assignedIntermediaryId: role === "intermediary" ? player.assignedIntermediaryId || "" : "",
+                        });
                       }}
                     >
-                      {roleLabel(player.role, player.branchId)}
-                    </BadgePill>
+                      <option value="unassigned|">Sin asignar</option>
+                      <option value="observador|">Observador</option>
+                      <option value="cliente|">Cliente</option>
+                      <option value="sucursal|bogota">Sucursal Bogotá</option>
+                      <option value="sucursal|medellin">Sucursal Medellín</option>
+                      <option value="intermediary|">Intermediario</option>
+                    </select>
+
+                    {player.role === "cliente" && (
+                      <select
+                        className="w-full rounded-2xl border bg-white px-3 py-3 text-sm outline-none"
+                        style={{ borderColor: COLORS.border }}
+                        value={player.assignedClientId || ""}
+                        onChange={(e) =>
+                          onAssignRole({
+                            playerId: player.id,
+                            role: "cliente",
+                            branchId: "",
+                            assignedClientId: e.target.value,
+                            assignedIntermediaryId: "",
+                          })
+                        }
+                      >
+                        <option value="">Seleccionar cliente</option>
+                        {seedClients.map((client) => (
+                          <option key={client.id} value={String(client.id)}>
+                            {client.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {player.role === "intermediary" && (
+                      <select
+                        className="w-full rounded-2xl border bg-white px-3 py-3 text-sm outline-none"
+                        style={{ borderColor: COLORS.border }}
+                        value={player.assignedIntermediaryId || ""}
+                        onChange={(e) =>
+                          onAssignRole({
+                            playerId: player.id,
+                            role: "intermediary",
+                            branchId: "",
+                            assignedClientId: "",
+                            assignedIntermediaryId: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="">Seleccionar intermediario</option>
+                        {INTERMEDIARY_PROFILES.map((profile) => (
+                          <option key={profile.id} value={profile.id}>
+                            {profile.displayName}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </div>
-
-                <div className="mt-5 space-y-3">
-                  <select
-                    className="w-full rounded-2xl border bg-white px-3 py-3 text-sm outline-none"
-                    style={{ borderColor: COLORS.border }}
-                    value={roleOptionValue(player.role || "unassigned", player.branchId || "")}
-                    onChange={(e) => {
-                      const [role, branchId] = e.target.value.split("|");
-                      onAssignRole({
-                        playerId: player.id,
-                        role,
-                        branchId: role === "sucursal" ? (branchId || "") : "",
-                        assignedClientId: role === "cliente" ? player.assignedClientId || "" : "",
-                        assignedIntermediaryId: role === "intermediary" ? player.assignedIntermediaryId || "" : "",
-                      });
-                    }}
-                  >
-                    <option value="unassigned|">Sin asignar</option>
-                    <option value="observador|">Observador</option>
-                    <option value="cliente|">Cliente</option>
-                    <option value="sucursal|bogota">Sucursal Bogotá</option>
-                    <option value="sucursal|medellin">Sucursal Medellín</option>
-                    <option value="intermediary|">Intermediario</option>
-                  </select>
-
-                  {player.role === "cliente" && (
-                    <select
-                      className="w-full rounded-2xl border bg-white px-3 py-3 text-sm outline-none"
-                      style={{ borderColor: COLORS.border }}
-                      value={player.assignedClientId || ""}
-                      onChange={(e) =>
-                        onAssignRole({
-                          playerId: player.id,
-                          role: "cliente",
-                          branchId: "",
-                          assignedClientId: e.target.value,
-                          assignedIntermediaryId: "",
-                        })
-                      }
-                    >
-                      <option value="">Seleccionar cliente</option>
-                      {seedClients.map((client) => (
-                        <option key={client.id} value={String(client.id)}>
-                          {client.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {player.role === "intermediary" && (
-                    <select
-                      className="w-full rounded-2xl border bg-white px-3 py-3 text-sm outline-none"
-                      style={{ borderColor: COLORS.border }}
-                      value={player.assignedIntermediaryId || ""}
-                      onChange={(e) =>
-                        onAssignRole({
-                          playerId: player.id,
-                          role: "intermediary",
-                          branchId: "",
-                          assignedClientId: "",
-                          assignedIntermediaryId: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="">Seleccionar intermediario</option>
-                      {INTERMEDIARY_PROFILES.map((profile) => (
-                        <option key={profile.id} value={profile.id}>
-                          {profile.displayName}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div
               className="col-span-full rounded-3xl border border-dashed p-6 text-sm"
