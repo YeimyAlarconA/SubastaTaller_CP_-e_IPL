@@ -1154,7 +1154,7 @@ function GameSetupPage({
           Asigna rol y perfil del personaje.
         </p>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {players.length ? (
             players.map((player) => {
               const hasAssignedRole = player.role && player.role !== "unassigned";
@@ -1693,7 +1693,7 @@ export default function App() {
     const unsub = onSnapshot(q, (snap) => {
       const data = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+        .sort((a, b) => (a.joinedAtMs || 0) - (b.joinedAtMs || 0));
       setPlayers(data);
     });
     return () => unsub();
