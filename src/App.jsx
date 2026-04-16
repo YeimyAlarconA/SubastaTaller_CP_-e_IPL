@@ -189,6 +189,10 @@ function roleLabel(role, branchId = "") {
 }
 
 function roleOptionValue(role, branchId = "") {
+  if (role === "intermediary") return "intermediary|";
+  if (role === "cliente") return "cliente|";
+  if (role === "observador") return "observador|";
+  if (role === "unassigned") return "unassigned|";
   return `${role}|${branchId}`;
 }
 
@@ -759,7 +763,7 @@ function IntermediaryProfileCard({ profile }) {
             Esperando intermediario asignado
           </div>
           <div className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
-            El host ya te asignó el rol, pero todavía no selecciona qué intermediario representas.
+            El host ya te asignó el rol de intermediario, pero todavía no selecciona qué intermediario representas.
           </div>
         </div>
       </CardBox>
@@ -1150,26 +1154,41 @@ function GameSetupPage({
           Asigna rol y perfil del personaje.
         </p>
 
-        <div className="mt-4 space-y-4">
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {players.length ? (
             players.map((player) => (
               <div
                 key={player.id}
-                className="rounded-3xl border p-4"
+                className="rounded-[28px] border p-5"
                 style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
               >
-                <div className="grid gap-4 lg:grid-cols-[1fr_220px_300px]">
-                  <div>
-                    <div className="font-semibold" style={{ color: COLORS.blueDark }}>
-                      {player.name}
-                    </div>
-                    <div className="text-sm" style={{ color: COLORS.textSoft }}>
-                      {roleLabel(player.role, player.branchId)}
-                    </div>
+                <div className="flex flex-col items-center text-center">
+                  <div
+                    className="flex h-16 w-16 items-center justify-center rounded-full text-white shadow-sm"
+                    style={{ backgroundColor: COLORS.blue }}
+                  >
+                    <UserRound className="h-8 w-8" />
                   </div>
 
+                  <div className="mt-4 text-xl font-semibold" style={{ color: COLORS.blueDark }}>
+                    {player.name}
+                  </div>
+
+                  <div className="mt-2">
+                    <BadgePill
+                      style={{
+                        backgroundColor: player.role === "unassigned" ? "#E5E7EB" : "#E7F0FF",
+                        color: player.role === "unassigned" ? "#4B5563" : COLORS.blueDark,
+                      }}
+                    >
+                      {roleLabel(player.role, player.branchId)}
+                    </BadgePill>
+                  </div>
+                </div>
+
+                <div className="mt-5 space-y-3">
                   <select
-                    className="rounded-2xl border bg-white px-3 py-2 text-sm outline-none"
+                    className="w-full rounded-2xl border bg-white px-3 py-3 text-sm outline-none"
                     style={{ borderColor: COLORS.border }}
                     value={roleOptionValue(player.role || "unassigned", player.branchId || "")}
                     onChange={(e) => {
@@ -1191,9 +1210,9 @@ function GameSetupPage({
                     <option value="intermediary|">Intermediario</option>
                   </select>
 
-                  {player.role === "cliente" ? (
+                  {player.role === "cliente" && (
                     <select
-                      className="rounded-2xl border bg-white px-3 py-2 text-sm outline-none"
+                      className="w-full rounded-2xl border bg-white px-3 py-3 text-sm outline-none"
                       style={{ borderColor: COLORS.border }}
                       value={player.assignedClientId || ""}
                       onChange={(e) =>
@@ -1213,9 +1232,11 @@ function GameSetupPage({
                         </option>
                       ))}
                     </select>
-                  ) : player.role === "intermediary" ? (
+                  )}
+
+                  {player.role === "intermediary" && (
                     <select
-                      className="rounded-2xl border bg-white px-3 py-2 text-sm outline-none"
+                      className="w-full rounded-2xl border bg-white px-3 py-3 text-sm outline-none"
                       style={{ borderColor: COLORS.border }}
                       value={player.assignedIntermediaryId || ""}
                       onChange={(e) =>
@@ -1235,14 +1256,15 @@ function GameSetupPage({
                         </option>
                       ))}
                     </select>
-                  ) : (
-                    <div />
                   )}
                 </div>
               </div>
             ))
           ) : (
-            <div className="rounded-3xl border border-dashed p-6 text-sm" style={{ borderColor: COLORS.border, color: COLORS.textSoft }}>
+            <div
+              className="col-span-full rounded-3xl border border-dashed p-6 text-sm"
+              style={{ borderColor: COLORS.border, color: COLORS.textSoft }}
+            >
               Aún no han entrado jugadores.
             </div>
           )}
