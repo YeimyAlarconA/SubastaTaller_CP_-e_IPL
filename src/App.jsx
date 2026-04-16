@@ -324,15 +324,12 @@ function SectionHeader({ title, subtitle, icon: Icon }) {
 
 function LogoHeader() {
   return (
-    <div className="flex items-center gap-3">
-      <div
-        className="flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden shadow-sm bg-white border"
-        style={{ borderColor: COLORS.border }}
-      >
+    <div className="flex items-center gap-4">
+      <div className="flex items-center justify-center">
         <img
           src={logoDireccion}
           alt="Logo BI"
-          className="h-12 w-12 object-contain"
+          className="h-20 w-20 object-contain"
         />
       </div>
 
