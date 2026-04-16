@@ -896,7 +896,7 @@ function AssignedClientPanel({ assignedClient, activeClient, onChooseApplicant }
           </BadgePill>
         </div>
 
-        <div className="mt-4 rounded-3xl border p-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.white }}>
+        <div className="mt-4">
           <div className="text-sm font-semibold" style={{ color: COLORS.blue }}>
             Contexto del caso
           </div>
@@ -1051,34 +1051,32 @@ function FacilitatorClientCard({ client, onAssignSingleApplicant }) {
                 Intermediarios aplicando
               </div>
 
-              <div className="mt-3 space-y-2">
+              <div className="mt-3 space-y-3">
                 {applicants.map((app) => (
                   <div
                     key={app.playerId}
-                    className="rounded-2xl border p-3"
+                    className="rounded-2xl border p-4"
                     style={{ borderColor: COLORS.border, backgroundColor: COLORS.softBlue }}
                   >
                     <div className="font-semibold" style={{ color: COLORS.blueDark }}>
                       {app.playerName}
                     </div>
-                    <div className="text-sm" style={{ color: COLORS.textSoft }}>
+                    <div className="mt-1 text-sm" style={{ color: COLORS.textSoft }}>
                       {app.branchName}
+                    </div>
+
+                    <div className="mt-4">
+                      <ActionButton
+                        onClick={() => onAssignSingleApplicant(client.id, app)}
+                        variant="orange"
+                        className="w-full"
+                      >
+                        Aplicar cliente
+                      </ActionButton>
                     </div>
                   </div>
                 ))}
               </div>
-
-              {singleApplicant && (
-                <div className="mt-4">
-                  <ActionButton
-                    onClick={() => onAssignSingleApplicant(client.id, singleApplicant)}
-                    variant="orange"
-                    className="w-full"
-                  >
-                    Aplicar cliente
-                  </ActionButton>
-                </div>
-              )}
             </div>
           )}
 
@@ -1139,10 +1137,6 @@ function GameSetupPage({
 
             <ActionButton onClick={onCloseSessionForEveryone} variant="primary">
               Cerrar partida para todos
-            </ActionButton>
-
-            <ActionButton onClick={onCloseSession} variant="secondary">
-              Cerrar sesión local
             </ActionButton>
           </div>
         </div>
