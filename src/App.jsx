@@ -2116,7 +2116,7 @@ export default function App() {
       <div className="mx-auto max-w-7xl p-6">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="mb-3">
+            <div className="mb-1">
               <LogoHeader />
             </div>
             <p className="text-sm" style={{ color: COLORS.textSoft }}>
