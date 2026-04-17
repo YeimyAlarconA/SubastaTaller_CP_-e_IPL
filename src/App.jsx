@@ -66,32 +66,32 @@ const COLORS = {
 
 const INTERMEDIARY_PROFILES = [
   {
-    id: "juan_perez",
-    displayName: "Juan Pérez",
+    id: "carlos_mendez",
+    displayName: "Carlos Méndez & Asociados",
     branchId: "bogota",
-    idoneidad: ["Fianzas", "Generales"],
-    antiguedad: "6 años",
+    idoneidad: ["Fianzas", "Generales", "Autos"],
+    antiguedad: "22 años",
   },
   {
     id: "laura_gomez",
-    displayName: "Laura Gómez",
+    displayName: "Laura Gómez Consultores",
     branchId: "bogota",
-    idoneidad: ["Autos", "Vida"],
-    antiguedad: "4 años",
-  },
-  {
-    id: "natalia_ruiz",
-    displayName: "Natalia Ruiz",
-    branchId: "medellin",
-    idoneidad: ["Autos", "Fianzas"],
-    antiguedad: "8 años",
-  },
-  {
-    id: "camilo_torres",
-    displayName: "Camilo Torres",
-    branchId: "medellin",
     idoneidad: ["Vida", "Generales"],
-    antiguedad: "5 años",
+    antiguedad: "15 años",
+  },
+  {
+    id: "grupo_integral",
+    displayName: "Grupo Integral de Seguros Andinos",
+    branchId: "medellin",
+    idoneidad: ["Autos", "Generales"],
+    antiguedad: "18 años",
+  },
+  {
+    id: "estrategias_patrimoniales",
+    displayName: "Estrategias Patrimoniales S.A.S",
+    branchId: "medellin",
+    idoneidad: ["Vida", "Fianzas"],
+    antiguedad: "12 años",
   },
 ];
 
@@ -378,16 +378,17 @@ function ClientVisual({ visual }) {
 }
 
 function ClientTypeBadge({ type }) {
-  const isCompany = type === "Empresa";
+  const isJuridico = type === "Cliente Jurídico";
+
   return (
     <BadgePill
       style={{
-        backgroundColor: isCompany ? "#E7F0FF" : "#FFF2E8",
-        color: isCompany ? COLORS.blueDark : COLORS.orange,
+        backgroundColor: isJuridico ? "#E7F0FF" : "#FFF2E8",
+        color: isJuridico ? COLORS.blueDark : COLORS.orange,
       }}
     >
       <span className="inline-flex items-center gap-1">
-        {isCompany ? <Building className="h-3.5 w-3.5" /> : <UserRound className="h-3.5 w-3.5" />}
+        {isJuridico ? <Building className="h-3.5 w-3.5" /> : <UserRound className="h-3.5 w-3.5" />}
         {type}
       </span>
     </BadgePill>
@@ -875,9 +876,9 @@ function AssignedClientPanel({ assignedClient, activeClient, onChooseApplicant }
           <div className="flex items-center gap-3">
             <div
               className="flex h-12 w-12 items-center justify-center rounded-2xl text-white"
-              style={{ backgroundColor: assignedClient.customerType === "Empresa" ? COLORS.blue : COLORS.orange }}
+              style={{ backgroundColor: assignedClient.customerType === "Cliente Jurídico" ? COLORS.blue : COLORS.orange }}
             >
-              {assignedClient.customerType === "Empresa" ? (
+              {assignedClient.customerType === "Cliente Jurídico" ? (
                 <Building className="h-6 w-6" />
               ) : (
                 <UserRound className="h-6 w-6" />
