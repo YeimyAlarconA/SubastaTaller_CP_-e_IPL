@@ -2115,9 +2115,11 @@ export default function App() {
     <div className="min-h-screen" style={{ backgroundColor: COLORS.bg, color: COLORS.blueDark }}>
       <div className="mx-auto max-w-7xl p-6">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-col justify-center">
-            <LogoHeader />
-            <p className="mt-1 text-xs leading-5" style={{ color: COLORS.textSoft }}>
+          <div>
+            <div className="mb-1">
+              <LogoHeader />
+            </div>
+            <p className="-mt-1 text-sm" style={{ color: COLORS.textSoft }}>
               Host, sucursal, intermediario, cliente y observador en tiempo real.
             </p>
           </div>
