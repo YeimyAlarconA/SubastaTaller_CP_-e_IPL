@@ -973,7 +973,7 @@ function AssignedClientPanel({ assignedClient, activeClient, onChooseApplicant }
   );
 }
 
-function FacilitatorClientCard({ client, onAssignSingleApplicant }) {
+function FacilitatorClientCard({ client, onAssignSingleApplicant, onCloseWithoutAssignment }) {
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
@@ -1036,6 +1036,15 @@ function FacilitatorClientCard({ client, onAssignSingleApplicant }) {
                 </span>
               </ActionButton>
             )}
+
+            {client.status === "active" && (
+              <ActionButton
+                onClick={() => onCloseWithoutAssignment(client.id)}
+                variant="secondary"
+              >
+                Cerrar sin asignación
+              </ActionButton>
+            )}
           </div>
 
           <AnimatePresence>
@@ -1095,6 +1104,15 @@ function FacilitatorClientCard({ client, onAssignSingleApplicant }) {
             >
               Elegido: <span className="font-semibold">{client.takenBy.playerName}</span> ·{" "}
               {client.takenBy.branchName}
+            </div>
+          )}
+
+          {client.status === "closed_no_assignment" && (
+            <div
+              className="mt-4 rounded-2xl p-4 text-sm"
+              style={{ backgroundColor: "#F3F4F6", color: "#4B5563" }}
+            >
+              Este cliente fue cerrado sin asignación.
             </div>
           )}
         </div>
@@ -1285,7 +1303,13 @@ function GameSetupPage({
   );
 }
 
-function FacilitatorPage({ session, onPublishNextClient, onGoFinal, onAssignSingleApplicant }) {
+function FacilitatorPage({
+  session,
+  onPublishNextClient,
+  onGoFinal,
+  onAssignSingleApplicant,
+  onCloseWithoutAssignment,
+}) {
   const activeClients = session?.activeClients || [];
   const branches = session?.branches || {};
   const alerts = session?.alerts || [];
@@ -1322,6 +1346,7 @@ function FacilitatorPage({ session, onPublishNextClient, onGoFinal, onAssignSing
               key={client.id}
               client={client}
               onAssignSingleApplicant={onAssignSingleApplicant}
+              onCloseWithoutAssignment={onCloseWithoutAssignment}
             />
           ))}
         </div>
@@ -2066,6 +2091,44 @@ export default function App() {
     await finalizeAssignment(clientId, applicant);
   };
 
+  const closeClientWithoutAssignment = async (clientId) => {
+    if (!sessionId || !isHost) return;
+
+    const ref = doc(db, "sessions", sessionId);
+
+    try {
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists()) throw new Error("La partida ya no existe.");
+
+        const data = snap.data();
+        const activeClients = [...(data.activeClients || [])];
+        const clientIndex = activeClients.findIndex((c) => String(c.id) === String(clientId));
+
+        if (clientIndex === -1) {
+          throw new Error("Ese cliente ya no está activo.");
+        }
+
+        const current = activeClients[clientIndex];
+        if (current.status !== "active") {
+          throw new Error("Ese cliente ya no está disponible.");
+        }
+
+        activeClients[clientIndex] = {
+          ...current,
+          status: "closed_no_assignment",
+          closedAtMs: Date.now(),
+        };
+
+        tx.update(ref, {
+          activeClients,
+        });
+      });
+    } catch (e) {
+      alert(e.message || "No fue posible cerrar el cliente sin asignación.");
+    }
+  };
+
   const closeSessionForEveryone = async () => {
     if (!sessionId || !isHost) return;
 
@@ -2447,6 +2510,7 @@ export default function App() {
                   onPublishNextClient={publishNextClient}
                   onGoFinal={goFinal}
                   onAssignSingleApplicant={assignSingleApplicantByFacilitator}
+                  onCloseWithoutAssignment={closeClientWithoutAssignment}
                 />
               </motion.div>
             )}
